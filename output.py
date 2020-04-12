@@ -8,12 +8,17 @@ import skimage.transform
 def build(confDict, oDict, fcalc, nav, i):
     # bincount requires assumptions - all positive integers, nothing greater than tracelen. Need to make sure these are met
     out = confDict["outputs"]
+    spt = confDict["simParams"]["tracesamples"]
 
     cti = fcalc[:,8].astype(np.int32)
     lr = fcalc[:,2]
     pwr = fcalc[:,0]
     twttAdj = fcalc[:,1] - nav["datum"][i]
     cbin = (twttAdj/confDict["simParams"]["dt"]).astype(np.int32)
+
+    cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
+
+    # Make sure 
 
     if(out["combined"] or out["combinedadj"]):
         #np.add.at(oDict["combined"][:,i], cbin, pwr)
@@ -163,7 +168,6 @@ def save(confDict, oDict, nav, dem, demData):
         emap = oDict["emap"]
         postSpace = np.sqrt(np.diff(nav["x"])**2 + np.diff(nav["y"])**2 + np.diff(nav["z"])**2).mean()
         ySquish = confDict['facetParams']['ctstep']/postSpace
-        print(postSpace,ySquish)
         emap[emap != 0] = emap[emap != 0] - (emap[emap != 0].mean()-emap[emap != 0].std())
         emap = emap*(255.0/(emap[emap != 0].mean()+emap[emap != 0].std()))
         emap = np.minimum(emap, 255)

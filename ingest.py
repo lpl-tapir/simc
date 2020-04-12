@@ -64,6 +64,17 @@ def readConfig(argDict):
         print("Invalid path to DEM file - file does not exist.")
         sys.exit(1)
 
+    # Make output prefix
+    if(confDict["paths"]["outpath"][-1] != '/'):
+        confDict["paths"]["outpath"] += '/'
+
+    navfile = confDict["paths"]["navpath"].split("/")[-1]
+    navname = navfile.split(".")[0]
+    confDict["paths"]["outpath"] = confDict["paths"]["outpath"] + navname + "_"
+
+    # Set log file path
+    confDict["paths"]["logpath"] = confDict["paths"]["outpath"] + "simLog.txt"
+
     # Assign correct data types for non-string config items
     confDict["simParams"]["speedlight"] = float(confDict["simParams"]["speedlight"])
     confDict["simParams"]["dt"] = float(confDict["simParams"]["dt"])
@@ -108,14 +119,6 @@ def readConfig(argDict):
         print("Invalid config file param")
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
-
-    # Make output prefix
-    if(confDict["paths"]["outpath"][-1] != '/'):
-        confDict["paths"]["outpath"] += '/'
-
-    navfile = confDict["paths"]["navpath"].split("/")[-1]
-    navname = navfile.split(".")[0]
-    confDict["paths"]["outpath"] = confDict["paths"]["outpath"] + navname + "_"
 
     # Determine internal xyz and spherical coordinate systems (IAU 2000)
     xyzD = {"mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs",

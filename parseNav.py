@@ -1,7 +1,5 @@
 import sys, h5py
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
 import rasterio as rio
 import numpy as np
 import pyproj
@@ -23,15 +21,11 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
   df["y"] = (df["elev"]*1000)*np.cos(np.radians(df["lat"]))*np.sin(np.radians(df["lon"]))
   df["z"] = (df["elev"]*1000)*np.sin(np.radians(df["lat"]))
 
-  # Set up geodataframe 
-  points = df.apply(lambda row: Point(row.x, row.y, row.z), axis=1)
-  gdf = gpd.GeoDataFrame(df, geometry=points)
-  gdf.crs = xyzsys
-
   # Find datum time with areoid
   aer = rio.open('../test/dem/mega_16.tif', 'r')
-  gdfAer = gdf.to_crs(aer.crs)
-  iy,ix = aer.index(gdfAer.geometry.x, gdfAer.geometry.y)
+  aerX, aerY, aerZ = pyproj.transform(xyzsys, aer.crs, df["x"].to_numpy(),
+                                df["y"].to_numpy(), df["z"].to_numpy())
+  iy,ix = aer.index(aerX, aerY)
   ix = np.array(ix)
   iy = np.array(iy)
 
@@ -39,10 +33,10 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
   ix[ix > aer.width-1] = aer.width-1
 
   zval = aer.read(1)[iy,ix]
-  gdf["datum"] = ((1000*gdf["elev"]-3396000-zval)*2/c) - (1800 * 37.5e-9)
+  df["datum"] = ((1000*df["elev"]-3396000-zval)*2/c) - (1800 * 37.5e-9)
   #print(gdf["datum"])
 
-  return gdf[["x", "y", "z", "datum"]]
+  return df[["x", "y", "z", "datum"]]
 
 def GetNav_QDAetm(navfile, navsys, xyzsys):
   c = 299792458
