@@ -13,36 +13,35 @@ def build(confDict, oDict, fcalc, nav, i):
     cti = fcalc[:,8].astype(np.int32)
     lr = fcalc[:,2]
     pwr = fcalc[:,0]
-    twttAdj = fcalc[:,1] - nav["datum"][i]
+    twtt = fcalc[:,1]
+    twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj/confDict["simParams"]["dt"]).astype(np.int32)
 
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
-    # Make sure 
-
     if(out["combined"] or out["combinedadj"]):
         #np.add.at(oDict["combined"][:,i], cbin, pwr)
-        oDict["combined"][:,i] = np.bincount(cbin, weights=pwr, minlength=3600)
+        oDict["combined"][:,i] = np.bincount(cbin, weights=pwr,
+                                                minlength=confDict["simParams"]["tracesamples"])
 
     if(out["left"]):
         # Left facets are first half
         #np.add.at(oDict["left"][:,i], cbin[lr == 0], pwr[lr == 0])
-        oDict["left"][:,i] = np.bincount(cbin[lr==0], weights=pwr[lr==0], minlength=3600)
+        oDict["left"][:,i] = np.bincount(cbin[lr==0], weights=pwr[lr==0],
+                                            minlength=confDict["simParams"]["tracesamples"])
 
     if(out["right"]):
         # Right facets are second half
         #np.add.at(oDict["right"][:,i], cbin[lr == 1], pwr[lr == 1])
-        oDict["right"][:,i] = np.bincount(cbin[lr==1], weights=pwr[lr==1], minlength=3600)
+        oDict["right"][:,i] = np.bincount(cbin[lr==1], weights=pwr[lr==1],
+                                            minlength=confDict["simParams"]["tracesamples"])
 
     if(out["fret"] or out["showfret"]):
         ffacet = fcalc[twttAdj == twttAdj.min(),:]
         oDict["fret"][i,0:3] = ffacet[0,5:8]
 
     if(out["echomap"] or out["echomapadj"]):
-        oDict["emap"][:,i] = np.bincount(cti, weights=pwr, minlength=oDict["emap"].shape[0])
-        #np.add.at(oDict["emap"][:,i], cti, pwr)
-        #plt.plot(cti[lr == 1])
-        #plt.show()
+        oDict["emap"][:,i] = np.bincount(cti, weights=pwr*(twtt**4), minlength=oDict["emap"].shape[0])
 
     return 0
 
@@ -51,7 +50,7 @@ def save(confDict, oDict, nav, dem, demData, win):
 
     out = confDict["outputs"]
 
-    if(out["shownadir"] or out["nadir"]):
+    if(out["shownadir"] or out["nadir"] or out["echomap"] or out["echomapadj"]):
         # Find nadir lat/lon/elev and bin
         x = nav["x"].to_numpy()
         y = nav["y"].to_numpy()
@@ -121,7 +120,6 @@ def save(confDict, oDict, nav, dem, demData, win):
 
     if(out["combinedadj"]):
         cgram = (oDict["combined"]*(255.0/oDict["combined"].max())).astype(np.uint8)
-        cshape = cgram.shape
         # Auto adjustment
         curve = np.fromfile("curve.txt", sep=' ')
         cgram = curve[cgram]*255
@@ -168,8 +166,10 @@ def save(confDict, oDict, nav, dem, demData, win):
         emap = oDict["emap"]
         postSpace = np.sqrt(np.diff(nav["x"])**2 + np.diff(nav["y"])**2 + np.diff(nav["z"])**2).mean()
         ySquish = confDict['facetParams']['ctstep']/postSpace
-        emap[emap != 0] = emap[emap != 0] - (emap[emap != 0].mean()-emap[emap != 0].std())
-        emap = emap*(255.0/(emap[emap != 0].mean()+emap[emap != 0].std()))
+        nz = (emap != 0) 
+        hclip = .4
+        emap[nz] = emap[nz] - (emap[nz].mean()-hclip*emap[nz].std())
+        emap = emap*(255.0/(emap[nz].mean()+hclip*emap[nz].std()))
         emap = np.minimum(emap, 255)
         emap = np.maximum(0, emap)
         yDim = int(emap.shape[0]*ySquish)

@@ -45,9 +45,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid = np.reshape(valid, shape)
 
     surface = np.stack((sx, sy, sz), axis=0)
-
     facets = genFacets(surface, valid)
-
     fcalc = calcFacets(facets, nav["x"][i], nav["y"][i], nav["z"][i],
                             confDict["simParams"]["speedlight"])
 
