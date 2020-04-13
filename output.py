@@ -47,7 +47,7 @@ def build(confDict, oDict, fcalc, nav, i):
     return 0
 
 
-def save(confDict, oDict, nav, dem, demData):
+def save(confDict, oDict, nav, dem, demData, win):
 
     out = confDict["outputs"]
 
@@ -59,7 +59,7 @@ def save(confDict, oDict, nav, dem, demData):
 
         gx, gy, gz = pyproj.transform(confDict["navigation"]["xyzsys"], dem.crs, x, y, z)
 
-        gt = ~dem.transform
+        gt = ~dem.window_transform(win)
         ix, iy = gt * (gx, gy)
         ix = ix.astype(np.int32)
         iy = iy.astype(np.int32)

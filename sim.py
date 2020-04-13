@@ -1,8 +1,9 @@
 import numpy as np
 import pyproj
 import rasterio as rio
+import sys
 
-def sim(confDict, dem, nav, xform, demData, i):
+def sim(confDict, dem, nav, xform, demData, win, i):
     atStep = confDict["facetParams"]["atstep"]
     ctStep = confDict["facetParams"]["ctstep"]
     atNum = confDict["facetParams"]["atdist"]//atStep
@@ -13,44 +14,40 @@ def sim(confDict, dem, nav, xform, demData, i):
 
     # Transform to dem CRS and sample DEM
     gtx, gty, gtz = xform.transform(gx, gy, gz, direction='FORWARD')
-    gt = ~dem.transform
+    gt = ~dem.window_transform(win)
     ix, iy = gt * (gtx, gty)
     ix = ix.astype(np.int32)
     iy = iy.astype(np.int32)
-    #iy, ix = dem.index(gtx, gty)
-    #ix = np.array(ix)
-    #iy = np.array(iy)
-    #print(ix, iy)
-    #sys.exit()
+    valid = np.ones(ix.shape).astype(np.bool)
+    demz = np.zeros(ix.shape).astype(np.float32)
 
-    # Bad mola pixel width patch
-    ix[ix > dem.width-1] = dem.width-1
-    
-    # N-S off mola patch
-    iy[iy < 0] = 0
-    iy[iy > dem.height-1] = dem.height-1
-
-    demz = demData[iy, ix]
+    # If dembump turned on, fix off dem values
+    if(confDict["simParams"]["dembump"]):
+        ix[ix < 0] = 0
+        ix[ix > dem.width-1] = dem.width-1
+        iy[iy < 0] = 0
+        iy[iy > dem.height-1] = dem.height-1
+        demz = demData[iy, ix]
+    else:
+        valid[ix < 0] = 0
+        valid[ix > dem.width-1] = 0
+        valid[iy < 0] = 0
+        valid[iy > dem.height-1] = 0
+        demz[valid] = demData[iy[valid], ix[valid]]
 
     # Transform back to xyz for facet calcs
     sx, sy, sz = xform.transform(gtx, gty, demz, direction='INVERSE')
 
-    sx = np.reshape(sx, (2*int(atNum)+1, 2*int(ctNum)+1))
-    sy = np.reshape(sy, (2*int(atNum)+1, 2*int(ctNum)+1))
-    sz = np.reshape(sz, (2*int(atNum)+1, 2*int(ctNum)+1))
-
-    #print(sx.shape)
-    #print(sy)
-    #print(sz)
-    #sys.exit()
+    shape = (2*int(atNum)+1, 2*int(ctNum)+1)
+    sx = np.reshape(sx, shape)
+    sy = np.reshape(sy, shape)
+    sz = np.reshape(sz, shape)
+    valid = np.reshape(valid, shape)
 
     surface = np.stack((sx, sy, sz), axis=0)
 
-    #print(surface.shape)
-    #print(surface)
-    #sys.exit()
+    facets = genFacets(surface, valid)
 
-    facets = genFacets(surface)
     fcalc = calcFacets(facets, nav["x"][i], nav["y"][i], nav["z"][i],
                             confDict["simParams"]["speedlight"])
 
@@ -103,19 +100,67 @@ def calcFacets(f, px, py, pz, c):
 
     return fcalc
 
-def genFacets(s):
+def genFacets(s, valid):
     # Generate list of facets (f) from surface grid (s)
+    # Facets that contain a point that is not valid will
+    # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-    nfacet = (w-1)*(h-1)*2
-    qt = int(nfacet/4)
-    hf = int(nfacet/2)
-    tq = hf+qt
+
+    nfacet = (w-1)*(h-1)*2 #number of facets
+    qt = int(nfacet/4) #quarter
+    hf = int(nfacet/2) #half
+    tq = hf+qt #three quarters
+
+    # Array to hold facet data
+    # Cols 1-9 hold (x1,y1,z1,x2,...,z3) of the facet corners
+    # Col 10 holds whether the facet is valid and should be evaluated
+    # Col 11 holds whether the facet is left or right side left is 0, right is 1
+    # Col 12 holds the cross-track index of the facet. This is for the echo power map
     f = np.zeros((nfacet,12))
+    fkeep = np.ones(nfacet).astype(np.bool)
 
     # Ordering of points along axis 1 is important for cross product later
     # Ordering of points along axis 0 is important for left/right side
  
+    atSlices = [slice(0,h-1), slice(0,h-1), slice(1,h), slice(1,h),
+                slice(1,h), slice(0,h-1), slice(0,h-1), slice(0,h-1),
+                slice(1,h), slice(1,h), slice(1,h), slice(0,h-1)]
+
+    ctSlices = [slice(0,(w-1)//2), slice(1,(w+1)//2), slice(0,(w-1)//2),
+                slice(1,(w+1)//2), slice(0,(w-1)//2), slice(1,(w+1)//2),
+                slice((w-1)//2,w-1), slice((w+1)//2,w), slice((w-1)//2,w-1),
+                slice((w+1)//2,w), slice((w-1)//2,w-1), slice((w+1)//2,w)]
+
+    lstSlices = [slice(0,qt), slice(qt,hf), slice(hf,tq), slice(tq,nfacet)]
+
+    for i in range(4):
+        for j in range(3):
+            f[lstSlices[i], 3*j] = s[0, atSlices[i*3+j], ctSlices[i*3+j]].flatten() # X
+            f[lstSlices[i], 3*j+1] = s[1, atSlices[i*3+j], ctSlices[i*3+j]].flatten() # Y
+            f[lstSlices[i], 3*j+2] = s[2, atSlices[i*3+j], ctSlices[i*3+j]].flatten() # Z
+            fkeep[lstSlices[i]] &= valid[atSlices[i*3+j], ctSlices[i*3+j]].flatten()
+
+    # Add in lr entry - l=0, r=1
+    f[0:hf,10] = 0
+    f[hf:nfacet,10] = 1
+
+    # Add in cross track indices for echo power map
+    hm0 = np.arange(0,h-1)
+    wm0 = np.arange(0,(w-1)//2)
+    wm0, hm0 = np.meshgrid(wm0, hm0)
+    f[0:qt, 11] = wm0.flatten()
+    f[qt:hf, 11] = wm0.flatten()
+
+    hm1 = np.arange(0,h-1)
+    wm1 = np.arange((w-1)//2, w-1)
+    wm1, hm1 = np.meshgrid(wm1, hm1)
+    f[hf:tq, 11] = wm1.flatten()
+    f[tq:nfacet, 11] = wm1.flatten()
+
+    return f[fkeep]
+
+"""
     ## Left Side Facets First   
     # Group 1 upper left xyz
     f[0:qt, 0] = s[0,0:h-1,0:(w-1)//2].flatten()
@@ -136,11 +181,13 @@ def genFacets(s):
     f[qt:hf, 0] = s[0,1:h,1:(w+1)//2].flatten()
     f[qt:hf, 1] = s[1,1:h,1:(w+1)//2].flatten()
     f[qt:hf, 2] = s[2,1:h,1:(w+1)//2].flatten()
+    f[qt:hf, 9] = valid[1:h,1:(w+1)//2].flatten()
 
     # Group 2 lower left xyz
     f[qt:hf, 3] = s[0,1:h,0:(w-1)//2].flatten()
     f[qt:hf, 4] = s[1,1:h,0:(w-1)//2].flatten()
     f[qt:hf, 5] = s[2,1:h,0:(w-1)//2].flatten()
+    f[qt:hf, 9] = np.logical_and(f[0:qt, 9], valid[1:h,0:(w-1)//2].flatten())
 
     # Group 2 upper right xyz
     f[qt:hf, 6] = s[0,0:h-1,1:(w+1)//2].flatten()
@@ -177,26 +224,7 @@ def genFacets(s):
     f[tq:nfacet, 6] = s[0,0:h-1,(w+1)//2:w].flatten()
     f[tq:nfacet, 7] = s[1,0:h-1,(w+1)//2:w].flatten()
     f[tq:nfacet, 8] = s[2,0:h-1,(w+1)//2:w].flatten()
-
-    # Add in lr entry - l=0, r=1
-    f[0:hf,10] = 0
-    f[hf:nfacet,10] = 1
-
-    # Add in cross track indices for echo power map
-    hm0 = np.arange(0,h-1)
-    wm0 = np.arange(0,(w-1)//2)
-    wm0, hm0 = np.meshgrid(wm0, hm0)
-    f[0:qt, 11] = wm0.flatten()
-    f[qt:hf, 11] = wm0.flatten()
-
-    hm1 = np.arange(0,h-1)
-    wm1 = np.arange((w-1)//2, w-1)
-    wm1, hm1 = np.meshgrid(wm1, hm1)
-    f[hf:tq, 11] = wm1.flatten()
-    f[tq:nfacet, 11] = wm1.flatten()
-
-
-    return f
+"""
 
 
 def genGrid(nav, ctNum, atNum, atStep, ctStep, i):

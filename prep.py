@@ -1,5 +1,7 @@
 import numpy as np
 import sys
+import pyproj
+import sim
 
 def prep(confDict, dem, nav):
     # Create data structures to hold output products
@@ -46,3 +48,36 @@ def prep(confDict, dem, nav):
     #print(nav["ul"])
 
     return nav, oDict
+
+def calcBounds(nav, dem, xyzsys, atDist, ctDist,):
+    corners = np.zeros((len(nav)*9, 3))
+
+    for i in range(len(nav)):
+        gx, gy, gz = sim.genGrid(nav, 1, 1, atDist, ctDist, i)
+        
+        corners[i*9:(i*9)+9, :] = np.stack((gx, gy, gz), axis=1)
+
+    demX, demY, demZ = pyproj.transform(xyzsys, dem.crs, corners[:,0],
+                                        corners[:,1], corners[:,2])
+    gt = ~dem.transform
+    ix, iy = gt * (demX, demY)
+
+    bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
+    
+    if(bounds[0] < 0):
+        print("Warning: min X off of DEM")
+        bounds[0] = 0
+
+    if(bounds[1] > dem.width-1):
+        print("Warning: max X off of DEM")
+        bounds[1] = dem.width-1
+
+    if(bounds[2] < 0):
+        print("Warning: min y off of DEM")
+        bounds[2] = 0
+
+    if(bounds[3] > dem.height-1):
+        print("Warning: max y off of DEM")
+        bounds[3] = dem.height-1
+
+    return bounds

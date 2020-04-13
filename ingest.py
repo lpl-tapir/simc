@@ -85,18 +85,22 @@ def readConfig(argDict):
     confDict["facetParams"]["atstep"] = float(confDict["facetParams"]["atstep"])
     confDict["facetParams"]["ctstep"] = float(confDict["facetParams"]["ctstep"])
 
-    trueVal = ["true", "True", "t", "T"]
-    falseVal = ["false", "False", "f", "F"]
+    boolDict = {"true":True, "t":True, "false":False,"f":False}
 
     for key in confDict["outputs"].keys():
-        if(confDict["outputs"][key] in trueVal):
-            confDict["outputs"][key] = True
-        elif(confDict["outputs"][key] in falseVal):
-            confDict["outputs"][key] = False
+        if(confDict["outputs"][key].lower() in boolDict):
+            confDict["outputs"][key] = boolDict[confDict["outputs"][key].lower()]
         else:
             print("Invalid value for outputs:" + key)
             print('Must be "True" or "False"')
             sys.exit(1)
+
+    if(confDict["simParams"]["dembump"].lower() in boolDict):
+        confDict["simParams"]["dembump"] = boolDict[confDict["simParams"]["dembump"].lower()]
+    else:
+        print("Invalid value for simParams:dembump")
+        print('Must be "True" or "False"')
+        sys.exit(1)
 
     # Check that facet extent and dimensions are legal
     if(confDict["facetParams"]["atdist"] < confDict["facetParams"]["atstep"]):
