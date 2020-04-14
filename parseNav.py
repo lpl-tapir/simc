@@ -3,6 +3,7 @@ import pandas as pd
 import rasterio as rio
 import numpy as np
 import pyproj
+import matplotlib.pyplot as plt
 
 # These functions must return a pandas dataframe with the 
 # following cols -
@@ -22,9 +23,10 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
   df["z"] = (df["elev"]*1000)*np.sin(np.radians(df["lat"]))
 
   # Find datum time with areoid
-  aer = rio.open('../test/dem/mega_16.tif', 'r')
+  aer = rio.open('../test/dem/mega_128.tif', 'r')
   aerX, aerY, aerZ = pyproj.transform(xyzsys, aer.crs, df["x"].to_numpy(),
                                 df["y"].to_numpy(), df["z"].to_numpy())
+
   iy,ix = aer.index(aerX, aerY)
   ix = np.array(ix)
   iy = np.array(iy)
@@ -33,8 +35,8 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
   ix[ix > aer.width-1] = aer.width-1
 
   zval = aer.read(1)[iy,ix]
-  df["datum"] = ((1000*df["elev"]-3396000-zval)*2/c) - (1800 * 37.5e-9)
-  #print(gdf["datum"])
+
+  df["datum"] = ((1000.0*df["elev"]-3396000.0-zval)*2.0/c) - (1800.0 * 37.5e-9)
 
   return df[["x", "y", "z", "datum"]]
 
