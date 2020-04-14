@@ -97,7 +97,7 @@ def save(confDict, oDict, nav, dem, demData, win):
             / 37.5e-9
         ).astype(np.int32)
 
-        #plt.plot(nbin,)
+        # plt.plot(nbin,)
 
         if out["nadir"]:
             nadInfo = np.zeros((nav.shape[0], 4))
