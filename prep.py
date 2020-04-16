@@ -24,7 +24,8 @@ def prep(confDict, dem, nav):
         numCTfacets = int(
             2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"]
         )
-        oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(np.float64)
+        oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(np.float64) # echo power
+        oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(np.bool) # first return
 
     if out["fret"] or out["showfret"]:
         oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
@@ -54,7 +55,7 @@ def prep(confDict, dem, nav):
 
 
 def calcBounds(
-    nav, dem, xyzsys, atDist, ctDist,
+    confDict, dem, nav, xyzsys, atDist, ctDist,
 ):
     corners = np.zeros((len(nav) * 9, 3))
 
@@ -71,20 +72,21 @@ def calcBounds(
 
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
 
-    if bounds[0] < 0:
-        print("Warning: min X off of DEM")
-        bounds[0] = 0
+    with open(confDict["paths"]["logpath"], 'a') as fd:
+        if bounds[0] < 0:
+            fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))
+            bounds[0] = 0
 
-    if bounds[1] > dem.width - 1:
-        print("Warning: max X off of DEM")
-        bounds[1] = dem.width - 1
+        if bounds[1] > dem.width - 1:
+            fd.write("Warning: max X off of DEM -> {}\n".format(bounds[1]))
+            bounds[1] = dem.width - 1
 
-    if bounds[2] < 0:
-        print("Warning: min y off of DEM")
-        bounds[2] = 0
+        if bounds[2] < 0:
+            fd.write("Warning: min y off of DEM -> {}".format(bounds[2]))
+            bounds[2] = 0
 
-    if bounds[3] > dem.height - 1:
-        print("Warning: max y off of DEM")
-        bounds[3] = dem.height - 1
+        if bounds[3] > dem.height - 1:
+            fd.write("Warning: max y off of DEM -> {}".format(bounds[3]))
+            bounds[3] = dem.height - 1
 
     return bounds

@@ -52,6 +52,8 @@ def build(confDict, oDict, fcalc, nav, i):
         oDict["emap"][:, i] = np.bincount(
             cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
         )
+        frFacets = cti[cbin == cbin.min()]
+        oDict["frmap"][frFacets, i] = 1
 
     return 0
 
@@ -59,6 +61,8 @@ def build(confDict, oDict, fcalc, nav, i):
 def save(confDict, oDict, nav, dem, demData, win):
 
     out = confDict["outputs"]
+    nColor = [255, 0, 255]
+    frColor = [50, 200, 200]
 
     if out["shownadir"] or out["nadir"] or out["echomap"] or out["echomapadj"]:
         # Find nadir lat/lon/elev and bin
@@ -74,15 +78,24 @@ def save(confDict, oDict, nav, dem, demData, win):
         ix, iy = gt * (gx, gy)
         ix = ix.astype(np.int32)
         iy = iy.astype(np.int32)
+    
+        nvalid = np.ones(ix.shape).astype(np.bool)
+        demz = np.zeros(ix.shape).astype(np.float32)
 
-        # Bad mola pixel width patch
-        ix[ix > dem.width - 1] = dem.width - 1
+        # If dembump turned on, fix off dem values
+        if confDict["simParams"]["dembump"]:
+            ix[ix < 0] = 0
+            ix[ix > (demData.shape[1] - 1)] = demData.shape[1] - 1
+            iy[iy < 0] = 0
+            iy[iy > (demData.shape[0] - 1)] = demData.shape[0] - 1
+        else:
+            nvalid[ix < 0] = 0
+            nvalid[ix > (demData.shape[1] - 1)] = 0
+            nvalid[iy < 0] = 0
+            nvalid[iy > (demData.shape[0] - 1)] = 0
 
-        # N-S off mola patch
-        iy[iy < 0] = 0
-        iy[iy > dem.height - 1] = dem.height - 1
-
-        demz = demData[iy, ix]
+        demz[nvalid] = demData[iy[nvalid], ix[nvalid]]
+        nvalid[demz == dem.nodata] = 0
 
         nx, ny, nz = pyproj.transform(
             dem.crs, confDict["navigation"]["xyzsys"], gx, gy, demz
@@ -96,8 +109,6 @@ def save(confDict, oDict, nav, dem, demData, win):
             ((2 * nr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
             / 37.5e-9
         ).astype(np.int32)
-
-        # plt.plot(nbin,)
 
         if out["nadir"]:
             nadInfo = np.zeros((nav.shape[0], 4))
@@ -163,14 +174,17 @@ def save(confDict, oDict, nav, dem, demData, win):
         cgram = curve[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
+        if out["showfret"]:
+            for i in range(len(fbin)):
+                b = fbin[i]
+                if(not np.isnan(b)):
+                    cstack[b, [i]] = nColor
+
         # Add in first return and nadir locations if requested
         if out["shownadir"]:
             for i in range(len(nbin)):
-                cstack[nbin[i], [i]] = [50, 200, 200]
-
-        if out["showfret"]:
-            for i in range(len(fbin)):
-                cstack[fbin[i], [i]] = [255, 0, 255]
+                if(nvalid[i]):
+                    cstack[nbin[i], [i]] = frColor
 
         cimg = Image.fromarray(cstack)
         cimg = cimg.convert("RGB")
@@ -209,15 +223,23 @@ def save(confDict, oDict, nav, dem, demData, win):
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
         nz = emap != 0
-        hclip = 0.4
+        hclip = 1
         emap[nz] = emap[nz] - (emap[nz].mean() - hclip * emap[nz].std())
         emap = emap * (255.0 / (emap[nz].mean() + hclip * emap[nz].std()))
         emap = np.minimum(emap, 255)
         emap = np.maximum(0, emap)
         yDim = int(emap.shape[0] * ySquish)
-        nemap = skimage.transform.resize(emap, (yDim, len(nav)))
-        egram = nemap
+        egram = skimage.transform.resize(emap, (yDim, len(nav)))
+        frgram = oDict["frmap"]
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+
+        idx = np.arange(0,frgram.shape[0])
+        for i in range(estack.shape[1]):
+            fri = idx[frgram[:,i] == 1]
+            fri = (fri*ySquish).astype(np.int32)
+            estack[fri,i] = frColor
+            estack[estack.shape[0]//2, i] = nColor
+
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomapAdj.png")

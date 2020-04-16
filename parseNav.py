@@ -54,6 +54,7 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
 
     # Temp fix mola meters/pix issue
     ix[ix > aer.width - 1] = aer.width - 1
+    ix[ix < 0] = 0
 
     zval = aer.read(1)[iy, ix]
 

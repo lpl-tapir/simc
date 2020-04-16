@@ -26,15 +26,16 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     ix, iy = gt * (gtx, gty)
     ix = ix.astype(np.int32)
     iy = iy.astype(np.int32)
+
     valid = np.ones(ix.shape).astype(np.bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
-        ix[ix > (demData.shape[1] - 1)] = dem.width - 1
+        ix[ix > (demData.shape[1] - 1)] = demData.shape[1] - 1
         iy[iy < 0] = 0
-        iy[iy > (demData.shape[0] - 1)] = dem.height - 1
+        iy[iy > (demData.shape[0] - 1)] = demData.shape[0] - 1
     else:
         valid[ix < 0] = 0
         valid[ix > (demData.shape[1] - 1)] = 0
@@ -42,6 +43,13 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         valid[iy > (demData.shape[0] - 1)] = 0
 
     demz[valid] = demData[iy[valid], ix[valid]]
+
+    # Mark nodata vals as invalid
+    valid[demz == dem.nodata] = 0
+
+    # If there are no valid facets
+    if(np.sum(valid) == 0):
+        return np.array([])
 
     # Transform back to xyz for facet calcs
     sx, sy, sz = xform.transform(gtx, gty, demz, direction="INVERSE")
