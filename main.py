@@ -22,7 +22,7 @@ def main():
     )
 
     with open(confDict["paths"]["logpath"], "w") as fd:
-        fd.write("University of Arizona Clutter Simulator Log File\nVersion 1.0\n")
+        fd.write("University of Arizona Clutter Simulator Log File\nVersion %.1f\n" % version)
         pprint.pprint(confDict, stream=fd)
 
     xform = pyproj.transformer.Transformer.from_crs(
