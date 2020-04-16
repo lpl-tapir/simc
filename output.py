@@ -78,7 +78,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         ix, iy = gt * (gx, gy)
         ix = ix.astype(np.int32)
         iy = iy.astype(np.int32)
-    
+
         nvalid = np.ones(ix.shape).astype(np.bool)
         demz = np.zeros(ix.shape).astype(np.float32)
 
@@ -177,13 +177,13 @@ def save(confDict, oDict, nav, dem, demData, win):
         if out["showfret"]:
             for i in range(len(fbin)):
                 b = fbin[i]
-                if(not np.isnan(b)):
+                if not np.isnan(b):
                     cstack[b, [i]] = nColor
 
         # Add in first return and nadir locations if requested
         if out["shownadir"]:
             for i in range(len(nbin)):
-                if(nvalid[i]):
+                if nvalid[i]:
                     cstack[nbin[i], [i]] = frColor
 
         cimg = Image.fromarray(cstack)
@@ -233,12 +233,12 @@ def save(confDict, oDict, nav, dem, demData, win):
         frgram = oDict["frmap"]
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
 
-        idx = np.arange(0,frgram.shape[0])
+        idx = np.arange(0, frgram.shape[0])
         for i in range(estack.shape[1]):
-            fri = idx[frgram[:,i] == 1]
-            fri = (fri*ySquish).astype(np.int32)
-            estack[fri,i] = frColor
-            estack[estack.shape[0]//2, i] = nColor
+            fri = idx[frgram[:, i] == 1]
+            fri = (fri * ySquish).astype(np.int32)
+            estack[fri, i] = frColor
+            estack[estack.shape[0] // 2, i] = nColor
 
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")

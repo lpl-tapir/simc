@@ -48,7 +48,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid[demz == dem.nodata] = 0
 
     # If there are no valid facets
-    if(np.sum(valid) == 0):
+    if np.sum(valid) == 0:
         return np.array([])
 
     # Transform back to xyz for facet calcs
