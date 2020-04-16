@@ -2,20 +2,19 @@
 
 # First arg is a text file with lines in the format s_00266001
 
-#source /opt/anaconda3/etc/profile.d/conda.sh
-#conda activate sim3
+touch job.txt
+rm -f job.txt
+touch job.txt
 
-touch jobm.txt
-rm -f jobm.txt
-touch jobm.txt
+pfix=/home/mchristo/proj/simc/
 
 while read p;
 do
     geom=$p
     ../fetch/geom_fetch.bash $geom
-    echo "python ./simc.py ./config/sharad_fpb.cfg ../test/temp/nav/geom/${geom}_geom.tab ../test/temp/dem/megt_128_merge.tif" >> jobm.txt
+    echo "python $pfix/simc/main.py $pfix/simc/config/sharad_fpb.ini -n $pfix/test/nav/geom/${geom}_geom.tab -d $pfix/test/dem/MOLA_SHARAD_128ppd_radius.tif" >> job.txt
 done <$1
 
 cd ..
-parallel -j 20 < ./batch/jobm.txt
+parallel -j 10 < ./batch/job.txt
 
