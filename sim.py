@@ -19,8 +19,23 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     # Generate grid in xyz space
     gx, gy, gz = genGrid(nav, ctNum, atNum, atStep, ctStep, i)
 
-    # Transform to dem CRS and sample DEM
-    gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+    if confDict["simParams"]["deminterp"]:
+        xres = (~gt)[0]
+        yres = (~gt)[4]
+        if xres != -yres:
+            print("Not able to handle DEM interpolation when xres != yres")
+            sys.exit(1)
+
+        demStep = np.sqrt(2) * xres
+        atNumCoarse = np.ceil(atDist / demStep).astype(np.int32)
+        ctNumCoarse = np.ceil(ctDist / demStep).astype(np.int32)
+        gxC, gyC, gzC = genGrid(nav, ctNumCoarse, atNumCoarse, demStep, demStep, i)
+
+        # Transform coarse grid to dem CRS
+        gtx, gty, gtz = xform.transform(gxC, gyC, gzC, direction="FORWARD")
+    else:
+        # Transform to dem CRS and sample DEM
+        gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -47,6 +62,25 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     # Mark nodata vals as invalid
     valid[demz == dem.nodata] = 0
 
+    # Interpolate coarse grid to fine if deminterp enabled
+    if confDict["simParams"]["deminterp"]:
+        gtxC = gtx[:]
+        gtyC = gty[:]
+
+        # Fine grid in DEM CRS
+        gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+
+        xords = np.stack((gtxC, gtyC), axis=1)
+        xordsQ = np.stack((gtx, gty), axis=1)
+
+        demz = scipy.interpolate.griddata(
+            xords[valid], demz[valid], xordsQ, method="cubic"
+        )
+
+        valid = np.ones(demz.shape).astype(np.bool)
+        valid[np.isnan(demz)] = 0
+        demz[np.isnan(demz)] = 0
+        
     # If there are no valid facets
     if np.sum(valid) == 0:
         return np.array([])
