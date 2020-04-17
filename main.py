@@ -2,6 +2,7 @@ import sys
 import ingest, prep, sim, output
 import rasterio as rio
 import numpy as np
+import pandas as pd
 import pprint
 import pyproj
 import time
@@ -14,22 +15,31 @@ def main():
     confDict = ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
 
-    nav = ingest.readNav(
+    onav = ingest.readNav(
         confDict["paths"]["navpath"],
         confDict["navigation"]["navsys"],
         confDict["navigation"]["xyzsys"],
         confDict["navigation"]["navfunc"],
     )
+    navl = len(onav)
+
+    # Get unique nav rows, may reorder traces - restored in the sim/build for loop
+    cols = ["x", "y", "z", "datum"]
+    navnp = onav[cols].to_numpy()
+    navnp, inv = np.unique(navnp, axis=0, return_inverse=True)
+    nav = pd.DataFrame(data=navnp, columns=cols)
 
     with open(confDict["paths"]["logpath"], "w") as fd:
-        fd.write("University of Arizona Clutter Simulator Log File\nVersion %.1f\n" % version)
+        fd.write(
+            "University of Arizona Clutter Simulator Log File\nVersion %.1f\n" % version
+        )
         pprint.pprint(confDict, stream=fd)
 
     xform = pyproj.transformer.Transformer.from_crs(
         confDict["navigation"]["xyzsys"], dem.crs
     )
 
-    nav, oDict = prep.prep(confDict, dem, nav)
+    nav, oDict = prep.prep(confDict, dem, nav, navl)
     bounds = prep.calcBounds(
         confDict,
         dem,
@@ -60,9 +70,11 @@ def main():
         if fcalc.shape[0] == 0:
             continue
 
-        output.build(confDict, oDict, fcalc, nav, i)
+        # Putting things back in order
+        oi = np.where(inv == i)[0]
+        output.build(confDict, oDict, fcalc, nav, i, oi)
 
-    output.save(confDict, oDict, nav, dem, demData, win)
+    output.save(confDict, oDict, onav, dem, demData, win)
     dem.close()
 
     stopTime = time.time()

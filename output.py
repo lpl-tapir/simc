@@ -4,9 +4,10 @@ from PIL import Image
 import pyproj
 import matplotlib.pyplot as plt
 import skimage.transform
+import curve
 
 
-def build(confDict, oDict, fcalc, nav, i):
+def build(confDict, oDict, fcalc, nav, i, oi):
     # bincount requires assumptions - all positive integers, nothing greater than tracelen. Need to make sure these are met
     out = confDict["outputs"]
     spt = confDict["simParams"]["tracesamples"]
@@ -20,40 +21,36 @@ def build(confDict, oDict, fcalc, nav, i):
 
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
-    if out["combined"] or out["combinedadj"]:
-        # np.add.at(oDict["combined"][:,i], cbin, pwr)
-        oDict["combined"][:, i] = np.bincount(
-            cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
-        )
+    for j in oi:
+        if out["combined"] or out["combinedadj"]:
+            oDict["combined"][:, j] = np.bincount(
+                cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
+            )
 
-    if out["left"]:
-        # Left facets are first half
-        # np.add.at(oDict["left"][:,i], cbin[lr == 0], pwr[lr == 0])
-        oDict["left"][:, i] = np.bincount(
-            cbin[lr == 0],
-            weights=pwr[lr == 0],
-            minlength=confDict["simParams"]["tracesamples"],
-        )
+        if out["left"]:
+            oDict["left"][:, j] = np.bincount(
+                cbin[lr == 0],
+                weights=pwr[lr == 0],
+                minlength=confDict["simParams"]["tracesamples"],
+            )
 
-    if out["right"]:
-        # Right facets are second half
-        # np.add.at(oDict["right"][:,i], cbin[lr == 1], pwr[lr == 1])
-        oDict["right"][:, i] = np.bincount(
-            cbin[lr == 1],
-            weights=pwr[lr == 1],
-            minlength=confDict["simParams"]["tracesamples"],
-        )
+        if out["right"]:
+            oDict["right"][:, j] = np.bincount(
+                cbin[lr == 1],
+                weights=pwr[lr == 1],
+                minlength=confDict["simParams"]["tracesamples"],
+            )
 
-    if out["fret"] or out["showfret"]:
-        ffacet = fcalc[twttAdj == twttAdj.min(), :]
-        oDict["fret"][i, 0:3] = ffacet[0, 5:8]
+        if out["fret"] or out["showfret"]:
+            ffacet = fcalc[twttAdj == twttAdj.min(), :]
+            oDict["fret"][j, 0:3] = ffacet[0, 5:8]
 
-    if out["echomap"] or out["echomapadj"]:
-        oDict["emap"][:, i] = np.bincount(
-            cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
-        )
-        frFacets = cti[cbin == cbin.min()]
-        oDict["frmap"][frFacets, i] = 1
+        if out["echomap"] or out["echomapadj"]:
+            oDict["emap"][:, j] = np.bincount(
+                cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
+            )
+            frFacets = cti[cbin == cbin.min()]
+            oDict["frmap"][frFacets, j] = 1
 
     return 0
 
@@ -61,8 +58,8 @@ def build(confDict, oDict, fcalc, nav, i):
 def save(confDict, oDict, nav, dem, demData, win):
 
     out = confDict["outputs"]
-    nColor = [255, 0, 255]
-    frColor = [50, 200, 200]
+    frColor = [255, 0, 255]
+    nColor = [50, 200, 200]
 
     if out["shownadir"] or out["nadir"] or out["echomap"] or out["echomapadj"]:
         # Find nadir lat/lon/elev and bin
@@ -121,6 +118,7 @@ def save(confDict, oDict, nav, dem, demData, win):
                 nadInfo,
                 delimiter=",",
                 header="lat,lon,elev_IAU2000,sample",
+                fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
 
@@ -157,6 +155,7 @@ def save(confDict, oDict, nav, dem, demData, win):
                 fretInfo,
                 delimiter=",",
                 header="lat,lon,elev_IAU2000,sample",
+                fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
 
@@ -170,21 +169,21 @@ def save(confDict, oDict, nav, dem, demData, win):
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
         # Auto adjustment
-        curve = np.fromfile("curve.txt", sep=" ")
-        cgram = curve[cgram] * 255
+        scaling = np.array(curve.curve)
+        cgram = scaling[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
         if out["showfret"]:
             for i in range(len(fbin)):
                 b = fbin[i]
                 if not np.isnan(b):
-                    cstack[b, [i]] = nColor
+                    cstack[b, [i]] = frColor
 
         # Add in first return and nadir locations if requested
         if out["shownadir"]:
             for i in range(len(nbin)):
                 if nvalid[i]:
-                    cstack[nbin[i], [i]] = frColor
+                    cstack[nbin[i], [i]] = nColor
 
         cimg = Image.fromarray(cstack)
         cimg = cimg.convert("RGB")
@@ -217,26 +216,38 @@ def save(confDict, oDict, nav, dem, demData, win):
         eimg.save(confDict["paths"]["outpath"] + "echomap.png")
 
     if out["echomapadj"]:
+        # Resize
         emap = oDict["emap"]
         postSpace = np.sqrt(
             np.diff(nav["x"]) ** 2 + np.diff(nav["y"]) ** 2 + np.diff(nav["z"]) ** 2
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
-        nz = emap != 0
-        hclip = 1
-        emap[nz] = emap[nz] - (emap[nz].mean() - hclip * emap[nz].std())
-        emap = emap * (255.0 / (emap[nz].mean() + hclip * emap[nz].std()))
-        emap = np.minimum(emap, 255)
-        emap = np.maximum(0, emap)
-        yDim = int(emap.shape[0] * ySquish)
-        egram = skimage.transform.resize(emap, (yDim, len(nav)))
-        frgram = oDict["frmap"]
+        yDim = np.floor(emap.shape[0] * ySquish).astype(np.int32) + 1
+
+        idx = np.arange(0, emap.shape[0])
+        nidx = np.floor(idx * ySquish).astype(np.int32)
+        egram = np.zeros((yDim, emap.shape[1]))
+        ecount = np.zeros((yDim, emap.shape[1]))
+
+        frmap = oDict["frmap"]
+        frgram = np.zeros((yDim, frmap.shape[1]))
+
+        egram = skimage.transform.resize(emap, (yDim, emap.shape[1]))
+        # Shrink emap and frmap
+        for i in range(egram.shape[1]):
+            frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
+
+        nz = egram != 0
+        hclip = 1.5
+        egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
+        egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
+        egram = np.minimum(egram, 255)
+        egram = np.maximum(0, egram)
+
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
 
-        idx = np.arange(0, frgram.shape[0])
-        for i in range(estack.shape[1]):
-            fri = idx[frgram[:, i] == 1]
-            fri = (fri * ySquish).astype(np.int32)
+        for i in range(egram.shape[1]):
+            fri = frgram[:, i] > 0
             estack[fri, i] = frColor
             estack[estack.shape[0] // 2, i] = nColor
 

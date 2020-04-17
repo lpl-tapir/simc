@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
+areoidPath = "/home/mchristo/proj/simc/test/dem/mega_128ppd.tif"
+
 
 def GetNav_FPBgeom(navfile, navsys, xyzsys):
     c = 299792458
@@ -43,7 +45,7 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
     # Find datum time with areoid
-    aer = rio.open("../test/dem/mega_128ppd.tif", "r")
+    aer = rio.open(areoidPath, "r")
     aerX, aerY, aerZ = pyproj.transform(
         xyzsys, aer.crs, df["x"].to_numpy(), df["y"].to_numpy(), df["z"].to_numpy()
     )

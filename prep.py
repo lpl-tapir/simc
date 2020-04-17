@@ -4,13 +4,13 @@ import pyproj
 import sim
 
 
-def prep(confDict, dem, nav):
+def prep(confDict, dem, nav, navl):
     # Create data structures to hold output products
     oDict = {}
     out = confDict["outputs"]
 
     samps = confDict["simParams"]["tracesamples"]
-    traces = nav.shape[0]
+    traces = navl
     if out["combined"] or out["combinedadj"]:
         oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
 
@@ -73,7 +73,6 @@ def calcBounds(
     )
     gt = ~dem.transform
     ix, iy = gt * (demX, demY)
-
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
 
     with open(confDict["paths"]["logpath"], "a") as fd:
