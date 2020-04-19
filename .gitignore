@@ -4,3 +4,7 @@ __pycache__/
 
 # cProfile output
 *.prof
+
+# Jobs in batch
+batch/job.txt
+batch/jobd.txt
