@@ -2,6 +2,7 @@ import numpy as np
 import pyproj
 import rasterio as rio
 import sys
+import scipy
 
 
 def sim(confDict, dem, nav, xform, demData, win, i):

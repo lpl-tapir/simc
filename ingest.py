@@ -17,6 +17,11 @@ def parseCmd():
         dest="demPath",
         help="Path to DEM file - overrides any path in config file",
     )
+    parser.add_argument(
+        "-o",
+        dest="outPath",
+        help="Path to output products - overrides any path in config file",
+    )
     args = parser.parse_args()
 
     # Store in dict, expand any relative paths
@@ -32,6 +37,11 @@ def parseCmd():
         argDict["demPath"] = os.path.abspath(args.demPath)
     else:
         argDict["demPath"] = None
+
+    if args.outPath is not None:
+        argDict["outPath"] = os.path.abspath(args.outPath)
+    else:
+        argDict["outPath"] = None
 
     return argDict
 
@@ -62,20 +72,26 @@ def readConfig(argDict):
 
     # Substitute in command line args if necessary
     if argDict["navPath"] is not None:
-        confDict["paths"]["navpath"] = argDict[
-            "navPath"
-        ]  # Command line arg overrides config file
+        # Command line arg overrides config file
+        confDict["paths"]["navpath"] = argDict["navPath"]  
 
     if argDict["demPath"] is not None:
         confDict["paths"]["dempath"] = argDict["demPath"]
 
-    # Check that nav and dem paths are valid
+    if argDict["outPath"] is not None:
+        confDict["paths"]["outpath"] = argDict["outPath"]
+
+    # Check that nav, out, and dem paths are valid
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
         sys.exit(1)
 
     if not os.path.exists(confDict["paths"]["dempath"]):
         print("Invalid path to DEM file - file does not exist.")
+        sys.exit(1)
+
+    if not os.path.exists(confDict["paths"]["outpath"]):
+        print("Invalid path to output files - folder does not exist.")
         sys.exit(1)
 
     # Make output prefix
