@@ -2,14 +2,21 @@ Guide to the MultiSim Clutter Simulator
 
 Michael Christoffersen
 
-Environment spec in environment.yml
+- Dependencies
+python 2.7.15
+numpy 1.14.4
+gdal 2.2.4
+pillow 5.1.0
+configparser 3.5.0
+
+conda create -n tsim python=2.7.15 numpy=1.14.4 gdal=2.2.4 pillow=5.1.0 configparser=3.5.0
 
 0. What is a clutter simulator?
 
 The purpose of this program is to create surface clutter simulations to
-aid in the analysis of sounding radar images, usually acquired from aircraft
-or spacecraft. In the context of sounding radar, "surface clutter" refers
-to power reflected from off-nadir features on the surface of the body being
+aid in the analysis of airborne and spaceborn sounding radar images. In
+the context of sounding radar, "surface clutter" refers to power
+reflected from off-nadir features on the surface of the body being
 sounded. The power reflected by these off-nadir features can reach the
 reveiver at times similar or identical to when power reflected from
 subsurface interfaces would return. This creates apparently subsurface
