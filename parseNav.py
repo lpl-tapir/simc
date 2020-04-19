@@ -1,9 +1,8 @@
-import sys, h5py
+import sys
 import pandas as pd
 import rasterio as rio
 import numpy as np
 import pyproj
-import matplotlib.pyplot as plt
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -45,7 +44,12 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
     # Find datum time with areoid
-    aer = rio.open(areoidPath, "r")
+    try:
+        aer = rio.open(areoidPath, "r")
+    except:
+        print("Unable to open areoid file, is it at : " + areoidPath + " ?")
+        sys.exit(1)
+
     aerX, aerY, aerZ = pyproj.transform(
         xyzsys, aer.crs, df["x"].to_numpy(), df["y"].to_numpy(), df["z"].to_numpy()
     )
