@@ -8,3 +8,6 @@ __pycache__/
 # Jobs in batch
 batch/jobm.txt
 batch/jobd.txt
+
+# Release
+simc.zip
