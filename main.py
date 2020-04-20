@@ -69,7 +69,7 @@ def main():
         oi = np.where(inv == i)[0]
         output.build(confDict, oDict, fcalc, nav, i, oi)
 
-    nav = nav.iloc[inv,:].reset_index()
+    nav = nav.iloc[inv, :].reset_index()
     output.save(confDict, oDict, nav, dem, demData, win)
     dem.close()
 

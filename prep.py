@@ -3,6 +3,7 @@ import sys
 import pyproj
 import sim
 
+
 def findDupe(nav):
     # Find neighboring duplicate nav points. Return nav without them and an index array to reconstruct
     # Does not sort
@@ -11,25 +12,26 @@ def findDupe(nav):
     inv = np.zeros(navl)
     uniq = np.ones(navl).astype(np.bool)
 
-    for i in range(navl-1):
+    for i in range(navl - 1):
         row = nav.iloc[i]
-        nrow = nav.iloc[i+1]
-        
+        nrow = nav.iloc[i + 1]
+
         inv[i] = olen
-        
+
         dx = nrow.x - row.x
         dy = nrow.y - row.y
         dz = nrow.z - row.z
         d = dx + dy + dz
-        
-        if(d):
+
+        if d:
             olen += 1
         else:
             uniq[i] = 0
-    
-    inv[i+1] = olen
-    
-    return nav.iloc[uniq,:].reset_index(), inv
+
+    inv[i + 1] = olen
+
+    return nav.iloc[uniq, :].reset_index(), inv
+
 
 def prep(confDict, dem, nav):
     # Create data structures to hold output products
