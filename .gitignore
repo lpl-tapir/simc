@@ -6,5 +6,5 @@ __pycache__/
 *.prof
 
 # Jobs in batch
-batch/job.txt
+batch/jobm.txt
 batch/jobd.txt

@@ -80,7 +80,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         valid = np.ones(demz.shape).astype(np.bool)
         valid[np.isnan(demz)] = 0
         demz[np.isnan(demz)] = 0
-        
+
     # If there are no valid facets
     if np.sum(valid) == 0:
         return np.array([])

@@ -3,14 +3,41 @@ import sys
 import pyproj
 import sim
 
+def findDupe(nav):
+    # Find neighboring duplicate nav points. Return nav without them and an index array to reconstruct
+    # Does not sort
+    navl = len(nav)
+    olen = 0
+    inv = np.zeros(navl)
+    uniq = np.ones(navl).astype(np.bool)
 
-def prep(confDict, dem, nav, navl):
+    for i in range(navl-1):
+        row = nav.iloc[i]
+        nrow = nav.iloc[i+1]
+        
+        inv[i] = olen
+        
+        dx = nrow.x - row.x
+        dy = nrow.y - row.y
+        dz = nrow.z - row.z
+        d = dx + dy + dz
+        
+        if(d):
+            olen += 1
+        else:
+            uniq[i] = 0
+    
+    inv[i+1] = olen
+    
+    return nav.iloc[uniq,:].reset_index(), inv
+
+def prep(confDict, dem, nav):
     # Create data structures to hold output products
     oDict = {}
     out = confDict["outputs"]
 
     samps = confDict["simParams"]["tracesamples"]
-    traces = navl
+    traces = len(nav)
     if out["combined"] or out["combinedadj"]:
         oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
 
@@ -34,6 +61,9 @@ def prep(confDict, dem, nav, navl):
     if out["fret"] or out["showfret"]:
         oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
 
+    # Remove duplicate entries, calculate inverse
+    nav, inv = findDupe(nav)
+
     # Velocity vector components
     vx = np.gradient(nav["x"])
     vy = np.gradient(nav["y"])
@@ -55,7 +85,7 @@ def prep(confDict, dem, nav, navl):
     nav["ul"] = list(l / np.stack((lMag, lMag, lMag), axis=1))
     # print(nav["ul"])
 
-    return nav, oDict
+    return nav, oDict, inv
 
 
 def calcBounds(

@@ -73,7 +73,7 @@ def readConfig(argDict):
     # Substitute in command line args if necessary
     if argDict["navPath"] is not None:
         # Command line arg overrides config file
-        confDict["paths"]["navpath"] = argDict["navPath"]  
+        confDict["paths"]["navpath"] = argDict["navPath"]
 
     if argDict["demPath"] is not None:
         confDict["paths"]["dempath"] = argDict["demPath"]

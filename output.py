@@ -102,6 +102,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         )
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
+
         nbin = (
             ((2 * nr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
             / 37.5e-9

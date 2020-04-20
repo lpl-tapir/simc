@@ -9,13 +9,17 @@ touch jobm.txt
 rm -f jobm.txt
 touch jobm.txt
 
-while read p;
+touch jobd.txt
+rm -f jobd.txt
+touch jobd.txt
+
+while read g;
 do
-    geom=$p
-    ../fetch/geom_fetch.bash $geom
-    echo "python ./simc.py ./config/sharad_fpb.cfg ../test/temp/nav/geom/${geom}_geom.tab ../test/temp/dem/megt_128_merge.tif" >> jobm.txt
+    echo "./fetch/geom_fetch.bash $g" >> jobd.txt
+    echo "python ./main.py ./config/sharad_fpb.ini -o ../out/joana/ -n ../test/nav/geom/${g}_geom.tab -d ../test/dem/MOLA_SHARAD_128ppd_radius.tif" >> jobm.txt
 done <$1
 
 cd ..
-parallel -j 20 < ./batch/jobm.txt
+parallel -j 12 < ./batch/jobd.txt
+parallel -j 10 < ./batch/jobm.txt
 
