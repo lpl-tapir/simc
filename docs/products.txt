@@ -1,0 +1,26 @@
+combinedAdj.png -
+	Full simulation scaled to 8 bits and saved as a contrast adjusted PNG format image. The simulated nadir return and first return locations are marked with blue and purple pixels, respectively. 
+
+combined.img -
+	Full simulation at 32 bits saved in an identical format to the PDS SHARAD .img products. 
+
+combined.png -
+	Full simulation scaled to 8 bits and saved as a PNG format image.
+
+echomapAdj.png -
+	A map of relative echo power returned from the surface below the radar, contrast adjusted and stretched so that the x and y dimensions of each pixel are equal.
+
+echomap.png - 
+	A map of relative echo power returned from the surface below the radar. The x and y dimensions of each pixel are the same as the along track and cross track facet dimensions.
+
+left.png -
+	Left side only simulation, with right and left defined using the direction of motion of the spacecraft, scaled to 8 bits and saved as a PNG format image.
+
+right.png -
+	Right side only simulation, with right and left defined using the direction of motion of the spacecraft, scaled to 8 bits and saved as a PNG format image.
+
+nadir.csv -
+	CSV file containing the latitude, longitude, elevation, and sample number in the radargram of the simulated nadir return for each trace. The latitude and longitude are on the IAU2000 Mars ellipsoid, and the elevation is meters above the same ellipsoid.
+
+firstReturn.csv -
+	CSV file containing the latitude, longitude, elevation, and sample number in the radargram of the simulated first return for each trace. The latitude and longitude are on the IAU2000 Mars ellipsoid, and the elevation is meters above the same ellipsoid.

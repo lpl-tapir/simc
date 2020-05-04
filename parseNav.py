@@ -3,6 +3,7 @@ import pandas as pd
 import rasterio as rio
 import numpy as np
 import pyproj
+import matplotlib.pyplot as plt
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -70,7 +71,6 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
 
     return df[["x", "y", "z", "datum"]]
 
-
 def GetNav_QDAetm(navfile, navsys, xyzsys):
     c = 299792458
     etmCols = [
@@ -99,10 +99,52 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
         df["lat"].to_numpy(),
         (1000 * df["alt"]).to_numpy(),
     )
-    df["datum"] = df["tshift"] * 1e-6
+    #df["datum"] = df["tshift"] * 1e-6
+
+    df["datum"] = (2*df["alt"]/c)-(1800*37.5e-9)
+
+    #plt.plot(np.gradient(df["tshift"]))
+    #plt.plot((df["tshift"]/37.5e-9),'.')
+    #plt.show()
+    #sys.exit()
+
+    rad = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
+
+    #plt.plot(rad)
+    #plt.show()
+    #sys.exit()
 
     return df[["x", "y", "z", "datum"]]
 
+def GetNav_LRS(navfile, navsys, xyzsys):
+    c = 299792458
+
+    df = pd.read_csv(navfile, sep=",")
+
+    df["x"], df["y"], df["z"] = pyproj.transform(
+        navsys,
+        xyzsys,
+        df["SUB_SPACECRAFT_LONGITUDE"].to_numpy(),
+        df["SUB_SPACECRAFT_LATITUDE"].to_numpy(),
+        np.ones(len(df))*190000,
+    )
+
+    plt.plot(df["SUB_SPACECRAFT_LONGITUDE"],'.')
+    plt.show()
+    #df["datum"] = df["tshift"] * 1e-6
+
+    #plt.plot(df["SPACECRAFT_ALTITUDE"])
+    #plt.plot(df["DISTANCE_TO_RANGE0"])
+    #plt.show()
+
+    df["datum"] = (2*1000*df["DISTANCE_TO_RANGE0"]/c) - (500*160e-9)
+
+    #rad = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
+
+    #plt.plot(rad)
+    #plt.show()
+
+    return df[["x", "y", "z", "datum"]]
 
 def GetNav_simpleTest(navfile, navsys, xyzsys):
     navCols = ["x", "y", "z"]

@@ -134,6 +134,15 @@ def readConfig(argDict):
         print('Must be "True" or "False"')
         sys.exit(1)
 
+    if confDict["simParams"]["deminterp"].lower() in boolDict:
+        confDict["simParams"]["deminterp"] = boolDict[
+            confDict["simParams"]["deminterp"].lower()
+        ]
+    else:
+        print("Invalid value for simParams:deminterp")
+        print('Must be "True" or "False"')
+        sys.exit(1)
+
     # Check that facet extent and dimensions are legal
     if confDict["facetParams"]["atdist"] < confDict["facetParams"]["atstep"]:
         print("Invalid config file param.")
