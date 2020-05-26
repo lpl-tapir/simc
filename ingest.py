@@ -1,6 +1,7 @@
 import argparse, configparser, os, sys
 import numpy as np
 import parseNav
+import matplotlib.pyplot as plt
 
 
 def parseCmd():
@@ -81,6 +82,9 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
+    if confDict["paths"]["sigpath"] is not None:
+        confDict["simParams"]["coherent"] = True
+
     # Check that nav, out, and dem paths are valid
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
@@ -93,6 +97,15 @@ def readConfig(argDict):
     if not os.path.exists(confDict["paths"]["outpath"]):
         print("Invalid path to output files - folder does not exist.")
         sys.exit(1)
+
+    if confDict["simParams"]["coherent"]:
+        if not os.path.exists(confDict["paths"]["sigpath"]):
+            print("Invalid path to signal file - file does not exist.")
+            sys.exit(1)
+
+        # Load signal to use for coherent simulation
+        confDict["simParams"]["signal"] = np.loadtxt(confDict["paths"]["sigpath"], dtype=np.complex128)
+
 
     # Make output prefix
     if confDict["paths"]["outpath"][-1] != "/":
