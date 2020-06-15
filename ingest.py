@@ -104,8 +104,9 @@ def readConfig(argDict):
             sys.exit(1)
 
         # Load signal to use for coherent simulation
-        confDict["simParams"]["signal"] = np.loadtxt(confDict["paths"]["sigpath"], dtype=np.complex128)
-
+        confDict["simParams"]["signal"] = np.loadtxt(
+            confDict["paths"]["sigpath"], dtype=np.complex128
+        )
 
     # Make output prefix
     if confDict["paths"]["outpath"][-1] != "/":

@@ -16,24 +16,24 @@ areoidPath = "/home/mchristo/proj/simc/test/dem/mega_128ppd.tif"
 
 
 def GetNav_akHDF(navfile, navsys, xyzsys):
-    h5 = h5py.File(navfile, 'r')
-    if("nav0" in h5["ext"].keys()):
+    h5 = h5py.File(navfile, "r")
+    if "nav0" in h5["ext"].keys():
         nav = h5["ext"]["nav0"][:]
         df = pd.DataFrame(nav)
 
-    elif("loc0" in h5["raw"].keys()):
+    elif "loc0" in h5["raw"].keys():
         nav = h5["raw"]["loc0"][:]
         df = pd.DataFrame(nav)
         # Interpolate non-unique values
-        hsh = nav["lat"] + nav["lon"]*1e4
+        hsh = nav["lat"] + nav["lon"] * 1e4
         idx = np.arange(0, len(hsh), 1)
         uniq, uidx = np.unique(hsh, return_index=True)
         uidx = np.sort(uidx)
-        uidx[-1] = len(hsh)-1 # Handle end of array
+        uidx[-1] = len(hsh) - 1  # Handle end of array
         df["lat"] = np.interp(idx, uidx, df["lat"][uidx])
         df["lon"] = np.interp(idx, uidx, df["lon"][uidx])
         df["altM"] = np.interp(idx, uidx, df["altM"][uidx])
-  
+
     else:
         print("No valid navigation data found in file %s" % navfile)
         sys.exit()
@@ -46,9 +46,10 @@ def GetNav_akHDF(navfile, navsys, xyzsys):
         df["altM"].to_numpy(),
     )
 
-    df["datum"] = 0*df["x"]
+    df["datum"] = 0 * df["x"]
 
     return df[["x", "y", "z", "datum"]]
+
 
 def GetNav_FPBgeom(navfile, navsys, xyzsys):
     c = 299792458
@@ -106,6 +107,7 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
 
     return df[["x", "y", "z", "datum"]]
 
+
 def GetNav_QDAetm(navfile, navsys, xyzsys):
     c = 299792458
     etmCols = [
@@ -134,22 +136,23 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
         df["lat"].to_numpy(),
         (1000 * df["alt"]).to_numpy(),
     )
-    #df["datum"] = df["tshift"] * 1e-6
+    # df["datum"] = df["tshift"] * 1e-6
 
-    df["datum"] = (2*df["alt"]/c)-(1800*37.5e-9)
+    df["datum"] = (2 * df["alt"] / c) - (1800 * 37.5e-9)
 
-    #plt.plot(np.gradient(df["tshift"]))
-    #plt.plot((df["tshift"]/37.5e-9),'.')
-    #plt.show()
-    #sys.exit()
+    # plt.plot(np.gradient(df["tshift"]))
+    # plt.plot((df["tshift"]/37.5e-9),'.')
+    # plt.show()
+    # sys.exit()
 
-    rad = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
+    rad = np.sqrt(df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2)
 
-    #plt.plot(rad)
-    #plt.show()
-    #sys.exit()
+    # plt.plot(rad)
+    # plt.show()
+    # sys.exit()
 
     return df[["x", "y", "z", "datum"]]
+
 
 def GetNav_LRS(navfile, navsys, xyzsys):
     c = 299792458
@@ -161,25 +164,26 @@ def GetNav_LRS(navfile, navsys, xyzsys):
         xyzsys,
         df["SUB_SPACECRAFT_LONGITUDE"].to_numpy(),
         df["SUB_SPACECRAFT_LATITUDE"].to_numpy(),
-        np.ones(len(df))*190000,
+        np.ones(len(df)) * 190000,
     )
 
-    plt.plot(df["SUB_SPACECRAFT_LONGITUDE"],'.')
+    plt.plot(df["SUB_SPACECRAFT_LONGITUDE"], ".")
     plt.show()
-    #df["datum"] = df["tshift"] * 1e-6
+    # df["datum"] = df["tshift"] * 1e-6
 
-    #plt.plot(df["SPACECRAFT_ALTITUDE"])
-    #plt.plot(df["DISTANCE_TO_RANGE0"])
-    #plt.show()
+    # plt.plot(df["SPACECRAFT_ALTITUDE"])
+    # plt.plot(df["DISTANCE_TO_RANGE0"])
+    # plt.show()
 
-    df["datum"] = (2*1000*df["DISTANCE_TO_RANGE0"]/c) - (500*160e-9)
+    df["datum"] = (2 * 1000 * df["DISTANCE_TO_RANGE0"] / c) - (500 * 160e-9)
 
-    #rad = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
+    # rad = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
 
-    #plt.plot(rad)
-    #plt.show()
+    # plt.plot(rad)
+    # plt.show()
 
     return df[["x", "y", "z", "datum"]]
+
 
 def GetNav_simpleTest(navfile, navsys, xyzsys):
     navCols = ["x", "y", "z"]

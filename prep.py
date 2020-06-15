@@ -90,9 +90,7 @@ def prep(confDict, dem, nav):
     return nav, oDict, inv
 
 
-def calcBounds(
-    confDict, dem, nav, xyzsys, atDist, ctDist,
-):
+def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
     corners = np.zeros((len(nav) * 9, 3))
 
     for i in range(len(nav)):
