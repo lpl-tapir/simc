@@ -35,9 +35,11 @@ def GetNav_akHDF(navfile, navsys, xyzsys):
         df["altM"] = np.interp(idx, uidx, df["altM"][uidx])
 
     else:
+        h5.close()
         print("No valid navigation data found in file %s" % navfile)
         sys.exit()
 
+    h5.close()
     df["x"], df["y"], df["z"] = pyproj.transform(
         navsys,
         xyzsys,
