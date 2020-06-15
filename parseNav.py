@@ -2,7 +2,7 @@ import sys
 import pandas as pd
 import rasterio as rio
 import numpy as np
-import pyproj
+import pyproj, h5py
 import matplotlib.pyplot as plt
 
 # These functions must return a pandas dataframe with the
@@ -14,6 +14,41 @@ import matplotlib.pyplot as plt
 
 areoidPath = "/home/mchristo/proj/simc/test/dem/mega_128ppd.tif"
 
+
+def GetNav_akHDF(navfile, navsys, xyzsys):
+    h5 = h5py.File(navfile, 'r')
+    if("nav0" in h5["ext"].keys()):
+        nav = h5["ext"]["nav0"][:]
+        df = pd.DataFrame(nav)
+
+    elif("loc0" in h5["raw"].keys()):
+        nav = h5["raw"]["loc0"][:]
+        df = pd.DataFrame(nav)
+        # Interpolate non-unique values
+        hsh = nav["lat"] + nav["lon"]*1e4
+        idx = np.arange(0, len(hsh), 1)
+        uniq, uidx = np.unique(hsh, return_index=True)
+        uidx = np.sort(uidx)
+        uidx[-1] = len(hsh)-1 # Handle end of array
+        df["lat"] = np.interp(idx, uidx, df["lat"][uidx])
+        df["lon"] = np.interp(idx, uidx, df["lon"][uidx])
+        df["altM"] = np.interp(idx, uidx, df["altM"][uidx])
+  
+    else:
+        print("No valid navigation data found in file %s" % navfile)
+        sys.exit()
+
+    df["x"], df["y"], df["z"] = pyproj.transform(
+        navsys,
+        xyzsys,
+        df["lon"].to_numpy(),
+        df["lat"].to_numpy(),
+        df["altM"].to_numpy(),
+    )
+
+    df["datum"] = 0*df["x"]
+
+    return df[["x", "y", "z", "datum"]]
 
 def GetNav_FPBgeom(navfile, navsys, xyzsys):
     c = 299792458
