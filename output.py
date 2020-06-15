@@ -160,7 +160,7 @@ def save(confDict, oDict, nav, dem, demData, win):
                 comments="",
             )
 
-    if out["combined"]:
+    if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
         cimg = Image.fromarray(cstack)
