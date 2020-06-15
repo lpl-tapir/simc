@@ -22,7 +22,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
     for j in oi:
-        if out["combined"] or out["combinedadj"]:
+        if out["combined"] or out["combinedadj"] or out["binary"]:
             oDict["combined"][:, j] = np.bincount(
                 cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
             )

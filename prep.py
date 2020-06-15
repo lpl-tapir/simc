@@ -40,7 +40,7 @@ def prep(confDict, dem, nav):
 
     samps = confDict["simParams"]["tracesamples"]
     traces = len(nav)
-    if out["combined"] or out["combinedadj"]:
+    if out["combined"] or out["combinedadj"] or out["binary"]:
         oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
 
     if out["left"]:
