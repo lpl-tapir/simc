@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-areoidPath = "/home/mchristo/proj/simc/test/dem/mega_128ppd.tif"
+areoidPath = "/zippy/MARS/code/modl/simc/dem/mega_128ppd.tif"
 
 
 def GetNav_akHDF(navfile, navsys, xyzsys):

@@ -6,15 +6,18 @@ touch job.txt
 rm -f job.txt
 touch job.txt
 
+## Paths
+outdir=/zippy/MARS/targ/modl/simc/stefano
+codedir=/zippy/MARS/code/modl/simc
+
 while read p;
 do
     hrsc=`cut -d',' -f1 <<< $p`
     geom=`cut -d',' -f2 <<< $p`
-    ../fetch/hrsc_fetch.bash $hrsc
-    ../fetch/geom_fetch.bash $geom
-    echo "python ./simc.py ./config/sharad_hrsc_fpb.cfg /zippy/MARS/code/modl/MRO/simc/test/temp/nav/geom/${geom}_geom.tab /zippy/MARS/code/modl/MRO/simc/test/temp/dem/hrsc/${hrsc}_da4.img" >> job.txt
+    $codedir/simc/fetch/hrsc_fetch.bash $hrsc
+    $codedir/simc/fetch/geom_fetch.bash $geom
+    echo "python $codedir/simc/main.py $codedir/simc/config/sharad_hrsc.ini -o $outdir -n $codedir/nav/geom/${geom}_geom.tab -d $codedir/dem/hrsc/${hrsc}_dt4.img" >> job.txt
 done <$1
 
-cd ..
-parallel -j 48 < ./batch/job.txt
+#parallel -j 48 < ./job.txt
 

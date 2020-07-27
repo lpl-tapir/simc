@@ -82,8 +82,10 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
-    if confDict["paths"]["sigpath"] is not None:
+    if confDict["paths"]["sigpath"].strip() not in (None, ''):
         confDict["simParams"]["coherent"] = True
+    else:
+        confDict["simParams"]["coherent"] = False
 
     # Check that nav, out, and dem paths are valid
     if not os.path.exists(confDict["paths"]["navpath"]):

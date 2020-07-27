@@ -1,0 +1,1 @@
+python /zippy/MARS/code/modl/simc/simc/main.py /zippy/MARS/code/modl/simc/simc/config/sharad_hrsc.ini -o /zippy/MARS/targ/modl/simc/stefano -n /zippy/MARS/code/modl/simc/nav/geom/s_00266001_geom.tab -d /zippy/MARS/code/modl/simc/dem/hrsc/h2179_0000_dt4.img
