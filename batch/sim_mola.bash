@@ -2,7 +2,7 @@
 
 # First arg is a text file with lines in the format s_00266001
 
-outdir=../out/stefano
+outdir=../out/spld
 
 #source /opt/anaconda3/etc/profile.d/conda.sh
 #conda activate sim3
