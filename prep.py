@@ -115,11 +115,11 @@ def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
             bounds[1] = dem.width - 1
 
         if bounds[2] < 0:
-            fd.write("Warning: min y off of DEM -> {}".format(bounds[2]))
+            fd.write("Warning: min y off of DEM -> {}\n".format(bounds[2]))
             bounds[2] = 0
 
         if bounds[3] > dem.height - 1:
-            fd.write("Warning: max y off of DEM -> {}".format(bounds[3]))
+            fd.write("Warning: max y off of DEM -> {}\n".format(bounds[3]))
             bounds[3] = dem.height - 1
 
     return bounds

@@ -174,13 +174,14 @@ def save(confDict, oDict, nav, dem, demData, win):
         cgram = scaling[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
-        if out["showfret"]:
-            for i in range(len(fbin)):
-                b = fbin[i]
-                if not np.isnan(b):
-                    cstack[b, [i]] = frColor
-
         # Add in first return and nadir locations if requested
+        if out["showfret"]:
+            frvalid = nvalid[:]
+            frvalid[np.abs(fbin) >= confDict["simParams"]["tracesamples"]] = 0
+            for i in range(len(fbin)):
+                if frvalid[i]:
+                    cstack[fbin[i], [i]] = frColor
+
         if out["shownadir"]:
             for i in range(len(nbin)):
                 if nvalid[i]:

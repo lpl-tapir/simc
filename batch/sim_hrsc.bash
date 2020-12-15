@@ -7,7 +7,7 @@ rm -f job.txt
 touch job.txt
 
 ## Paths
-outdir=/zippy/MARS/targ/modl/simc/stefano
+outdir=/zippy/MARS/targ/modl/simc/whittenOct2020
 codedir=/zippy/MARS/code/modl/simc
 
 while read p;
@@ -19,5 +19,5 @@ do
     echo "python $codedir/simc/main.py $codedir/simc/config/sharad_hrsc.ini -o $outdir -n $codedir/nav/geom/${geom}_geom.tab -d $codedir/dem/hrsc/${hrsc}_dt4.img" >> job.txt
 done <$1
 
-#parallel -j 48 < ./job.txt
+parallel -j 30 < ./job.txt
 
