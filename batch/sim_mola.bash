@@ -1,28 +1,22 @@
 #!/bin/bash
 
-# First arg is a text file with lines in the format s_00266001
+# First arg is a text file with lines in the format h2179_0000,s_00266001
 
-outdir=../out/stefano
+touch job.txt
+rm -f job.txt
+touch job.txt
 
-#source /opt/anaconda3/etc/profile.d/conda.sh
-#conda activate sim3
+## Paths
+outdir=/zippy/MARS/targ/modl/simc/mcglasson_4Dec2020
+codedir=/zippy/MARS/code/modl/simc
 
-touch jobm.txt
-rm -f jobm.txt
-touch jobm.txt
+#mkdir $outdir
 
-touch jobd.txt
-rm -f jobd.txt
-touch jobd.txt
-
-while read g;
+while read p;
 do
-    echo "./fetch/geom_fetch.bash $g" >> jobd.txt
-    echo "python ./main.py ./config/sharad_fpb.ini -o $outdir -n ../test/nav/geom/${g}_geom.tab -d ../test/dem/MOLA_SHARAD_128ppd_radius.tif" >> jobm.txt
+    $codedir/simc/fetch/geom_fetch.bash $p
+    echo "python $codedir/simc/main.py $codedir/simc/config/sharad_fpb.ini -o $outdir -n $codedir/nav/geom/${p}_geom.tab -d $codedir/dem/MOLA_SHARAD_128ppd_radius.tif" >> job.txt
 done <$1
 
-cd ..
-parallel -j 12 < ./batch/jobd.txt
-parallel -j 10 < ./batch/jobm.txt
+parallel -j 30 < ./job.txt
 
-rm ./batch/jobd.txt ./batch/jobm.txt

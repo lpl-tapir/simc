@@ -6,14 +6,20 @@ touch job.txt
 rm -f job.txt
 touch job.txt
 
+ncore=36
+
+year=2015
+ipfix=/zippy/MARS/targ/supl/UAF/$year/hdf5
 pfix=/zippy/MARS/code/modl/simc/simc
+opfix=/zippy/MARS/targ/supl/UAF/$year/clutter
 
-while read p;
+for p in $ipfix/*.h5;
 do
-    echo "python $pfix/main.py $pfix/config/oib_ak.cfg -n /zippy/MARS/targ/supl/UAF/2018/hdf5/${p}.h5" >> job.txt
-done <$1
+    echo "python $pfix/main.py $pfix/config/oib_ak.ini -n $p -o $opfix/" >> job.txt
+done
 
-cd ..
-#parallel -j 34 < /zippy/MARS/code/modl/simc/code/batch/job.txt
+parallel -j $ncore < ./job.txt
 #parallel -j 50 --sshloginfile $pfix/code/batch/machines.txt < $pfix/code/batch/job.txt
+
+rm job.txt
 
