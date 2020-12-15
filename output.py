@@ -18,7 +18,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     twtt = fcalc[:, 1]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
-
+  
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
     for j in oi:
@@ -179,12 +179,13 @@ def save(confDict, oDict, nav, dem, demData, win):
             frvalid = nvalid[:]
             frvalid[np.abs(fbin) >= confDict["simParams"]["tracesamples"]] = 0
             for i in range(len(fbin)):
-                if frvalid[i]:
-                    cstack[fbin[i], [i]] = frColor
+                b = fbin[i]
+                if not np.isnan(b) and abs(b) < confDict["simParams"]["tracesamples"] :
+                    cstack[b, [i]] = frColor
 
         if out["shownadir"]:
             for i in range(len(nbin)):
-                if nvalid[i]:
+                if nvalid[i] and abs(b) < confDict["simParams"]["tracesamples"]:
                     cstack[nbin[i], [i]] = nColor
 
         cimg = Image.fromarray(cstack)
