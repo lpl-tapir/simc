@@ -29,6 +29,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         demStep = np.sqrt(2) * xres
         atNumCoarse = np.ceil(atDist / demStep).astype(np.int32)
         ctNumCoarse = np.ceil(ctDist / demStep).astype(np.int32)
+        print(demStep)
         gxC, gyC, gzC = genGrid(nav, ctNumCoarse, atNumCoarse, demStep, demStep, i)
 
         # Transform coarse grid to dem CRS

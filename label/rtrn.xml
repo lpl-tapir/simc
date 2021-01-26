@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1F00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1F00_1500.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1F00_1910.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<Product_Observational
+    xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+    xmlns:geom="http://pds.nasa.gov/pds4/geom/v1"
+    xsi:schemaLocation=
+    "http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1700.xsd
+    http://pds.nasa.gov/pds4/geom/v1 https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1700_1401.xsd">
+	<Identification_Area>
+		<logical_identifier>urn:nasa:pds:mro_sharad_simulations:data:s_01294501_rtrn</logical_identifier>
+		<version_id>1.0</version_id>
+		<title>SHARAD surface clutter simulation nadir and first return information</title>
+		<information_model_version>1.15.0.0</information_model_version>
+		<product_class>Product_Observational</product_class>
+		<Citation_Information>
+			<author_list>Michael S Christoffersen, John W Holt, Scott D. Kempf, PDS node people?</author_list>
+			<publication_year>2021</publication_year>
+			<description>Surface clutter simulations for SHARAD observations</description>
+		</Citation_Information>
+	</Identification_Area>
+	<Observation_Area>
+		<Time_Coordinates>
+            <start_date_time>[START_DATETIME]Z</start_date_time>
+            <stop_date_time>[STOP_DATETIME]Z</stop_date_time>
+		</Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>MRO</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.mars_reconnaissance_orbiter</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>Shallow Radar (SHARAD)</name>
+            <Observing_System_Component>
+                <name>MRO</name>
+                <type>Spacecraft</type>
+                <description>Mars Reconnaissance Orbiter</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.mro</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>SHARAD</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:sharad.mro</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+		<Target_Identification>
+            <name>Mars</name>
+            <type>Planet</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        <Discipline_Area>
+			<geom:Geometry>
+            	<geom:Geometry_Orbiter>
+		            <geom:geometry_start_time_utc>[START_DATETIME]Z</geom:geometry_start_time_utc>
+		            <geom:geometry_stop_time_utc>[STOP_DATETIME]Z</geom:geometry_stop_time_utc>
+		            <geom:Surface_Geometry>
+		            	<geom:Surface_Geometry_Start_Stop>
+		            		<geom:start_subspacecraft_latitude unit="deg">[START_LAT]</geom:start_subspacecraft_latitude>
+		            		<geom:stop_subspacecraft_latitude unit="deg">[STOP_LAT]</geom:stop_subspacecraft_latitude>
+		            		<geom:start_subspacecraft_longitude unit="deg">[START_LON]</geom:start_subspacecraft_longitude>
+		            		<geom:stop_subspacecraft_longitude unit="deg">[STOP_LON]</geom:stop_subspacecraft_longitude>
+		            	</geom:Surface_Geometry_Start_Stop>
+		            </geom:Surface_Geometry>
+	            </geom:Geometry_Orbiter>
+            </geom:Geometry>
+        </Discipline_Area>
+	</Observation_Area>
+	<Reference_List>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:browse:[SIM_NAME4]_browse</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Clutter simulation browse images.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:how_to_reference_PDS3:rgram_file</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Sharad radargram corresponding to this simulation.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:data:[SIM_NAME4]_sim</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Surface clutter simulation.</comment>
+		</Internal_Reference>
+		<!-- <Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:geom_files::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Sharad geometry used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:mola_plus_sharad:surface::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Topographic model of Mars used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:MOLA_areoid::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Model of the Martian areoid used to create this simulation.</comment>
+		</Source_Product_Internal> -->
+	</Reference_List>
+	<File_Area_Observational>
+		<File>
+			<file_name>[SIM_NAME4]_rtrn.csv</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[FNCSV_SIZE]</file_size>
+			<md5_checksum>[FNCSV_MD5]</md5_checksum>
+		</File>
+		<Header>
+			<offset unit="byte">0</offset>
+			<object_length unit="byte">85</object_length>
+			<parsing_standard_id>7-Bit ASCII Text</parsing_standard_id>
+		</Header>
+		<Table_Delimited>
+			<offset unit="byte">85</offset>
+			<parsing_standard_id>PDS DSV 1</parsing_standard_id>
+			<records>[NUM_TRACE]</records>
+			<record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+			<field_delimiter>Comma</field_delimiter>
+			<Record_Delimited>
+				<fields>9</fields>
+				<groups>0</groups>
+				<Field_Delimited>
+					<name>Column</name>
+					<data_type>ASCII_Integer</data_type>
+					<description>Radargram column</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>NadirLat</name>
+					<data_type>ASCII_Real</data_type>
+					<description>Nadir return latitude</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>NadirLon</name>
+					<data_type>ASCII_Real</data_type>
+					<description>Nadir return longitude</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>NadirElev</name>
+					<data_type>ASCII_Real</data_type>
+					<description>Nadir return elevation above the Mars IAU2000 ellipsoid</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>NadirSamp</name>
+					<data_type>ASCII_Integer</data_type>
+					<description>Nadir return sample in the radargram</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>FirstLat</name>
+					<data_type>ASCII_Real</data_type>
+					<description>First return latitude</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>FirstLon</name>
+					<data_type>ASCII_Real</data_type>
+					<description>First return longitude</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>FirstElev</name>
+					<data_type>ASCII_Real</data_type>
+					<description>First return elevation above the Mars IAU2000 ellipsoid</description>
+				</Field_Delimited>
+				<Field_Delimited>
+					<name>FirstSamp</name>
+					<data_type>ASCII_Integer</data_type>
+					<description>First return sample in the radargram</description>
+				</Field_Delimited>				
+			</Record_Delimited>
+		</Table_Delimited>
+	</File_Area_Observational>
+</Product_Observational>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1F00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1F00_1500.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1F00_1910.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<Product_Browse
+    xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation=
+    "http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1700.xsd">
+	<Identification_Area>
+		<logical_identifier>urn:nasa:pds:mro_sharad_simulations:data:s_01294501_browse</logical_identifier>
+		<version_id>1.0</version_id>
+		<title>SHARAD surface clutter browse products</title>
+		<information_model_version>1.15.0.0</information_model_version>
+		<product_class>Product_Browse</product_class>
+		<Citation_Information>
+			<author_list>Michael S Christoffersen, John W Holt, Scott D. Kempf, PDS node people?</author_list>
+			<publication_year>2021</publication_year>
+			<description>Surface clutter simulations for SHARAD observations</description>
+		</Citation_Information>
+	</Identification_Area>
+	<Reference_List>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:data:[SIM_NAME4]_sim</lid_reference>
+			<reference_type>browse_to_data</reference_type>
+			<comment>Surface clutter simulation.</comment>
+		</Internal_Reference>
+		<!-- <Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:geom_files::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Sharad geometry used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:mola_plus_sharad:surface::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Topographic model of Mars used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:MOLA_areoid::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Model of the Martian areoid used to create this simulation.</comment>
+		</Source_Product_Internal> -->
+	</Reference_List>
+	<File_Area_Browse>
+		<File>
+			<file_name>[SIM_NAME4]_browse_combined.tif</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[CTIFF_SIZE]</file_size>
+			<md5_checksum>[CTIFF_MD5]</md5_checksum>
+		</File>
+		<Encoded_Image>
+			<name>Combined sim browse</name>
+			<offset unit="byte">0</offset>
+			<encoding_standard_id>TIFF</encoding_standard_id>
+		</Encoded_Image>
+	</File_Area_Browse>
+	<File_Area_Browse>
+		<File>
+			<file_name>[SIM_NAME4]_browse_left.tif</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[LTIFF_SIZE]</file_size>
+			<md5_checksum>[LTIFF_MD5]</md5_checksum>
+		</File>
+		<Encoded_Image>
+			<name>Left sim browse</name>
+			<offset unit="byte">0</offset>
+			<encoding_standard_id>TIFF</encoding_standard_id>
+		</Encoded_Image>
+	</File_Area_Browse>
+	<File_Area_Browse>
+		<File>
+			<file_name>[SIM_NAME4]_browse_right.tif</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[RTIFF_SIZE]</file_size>
+			<md5_checksum>[RTIFF_MD5]</md5_checksum>
+		</File>
+		<Encoded_Image>
+			<name>Right sim browse</name>
+			<offset unit="byte">0</offset>
+			<encoding_standard_id>TIFF</encoding_standard_id>
+		</Encoded_Image>
+	</File_Area_Browse>
+	<File_Area_Browse>
+		<File>
+			<file_name>[SIM_NAME4]_browse_emap.tif</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[ETIFF_SIZE]</file_size>
+			<md5_checksum>[ETIFF_MD5]</md5_checksum>
+		</File>
+		<Encoded_Image>
+			<name>Echo power map browse</name>
+			<offset unit="byte">0</offset>
+			<encoding_standard_id>TIFF</encoding_standard_id>
+		</Encoded_Image>
+	</File_Area_Browse>
+</Product_Browse>

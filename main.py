@@ -29,6 +29,8 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
+    #print("REEEE CHANGE demcrs to dem.crs REEEEEE")
+    #demcrs = "+proj=longlat +a=3396190 +no_defs"
     xform = pyproj.transformer.Transformer.from_crs(
         confDict["navigation"]["xyzsys"], dem.crs
     )

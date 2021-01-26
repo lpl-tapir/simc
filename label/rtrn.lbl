@@ -1,0 +1,131 @@
+PDS_VERSION_ID                = PDS3
+
+/* File characteristics */
+RECORD_TYPE                   = FIXED_LENGTH
+RECORD_BYTES                  = 80
+FILE_RECORDS                  = [NUM_TRACE]
+
+/* Pointers to objects in file */
+^TABLE                             = "[SIM_NAME3]_RTRN.CSV"
+
+/* Identification data elements */
+DATA_SET_ID                        = "MRO_SHARAD_SIMULATIONSV1.0"
+PRODUCT_ID                         = "[SIM_NAME3]_RTRN"
+INSTRUMENT_HOST_ID                 = "MRO"
+INSTRUMENT_HOST_NAME               = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_ID                      = "SHARAD"
+INSTRUMENT_NAME                    = "SHALLOW RADAR"
+TARGET_NAME                        = "MARS"
+ORBIT_NUMBER                       = [ORBIT_NUM]
+MRO:START_SUB_SPACECRAFT_LONGITUDE = [START_LON] <DEGREE>
+MRO:START_SUB_SPACECRAFT_LATITUDE  = [START_LAT] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LONGITUDE  = [STOP_LON] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LATITUDE   = [STOP_LAT] <DEGREE>
+START_TIME                         = [START_DATETIME]
+STOP_TIME                          = [STOP_DATETIME]
+SPACECRAFT_CLOCK_START_COUNT       = "UNK"
+SPACECRAFT_CLOCK_STOP_COUNT        = "UNK"
+PRODUCT_CREATION_TIME              = [SIM_TIME_UTC]
+PRODUCT_VERSION_ID                 = "2"
+PRODUCER_INSTITUTION_NAME          = "UNIVERSITY OF ARIZONA"
+
+/* GEOM table information */
+OBJECT                           = TABLE
+ COLUMNS                         = 9
+ ROWS                            = [NUM_TRACE]
+ ROW_BYTES                       = 100
+ INTERCHANGE_FORMAT              = ASCII
+ DESCRIPTION                     = "Simulated locations and times of first
+                                    and nadir returns."
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 1
+  NAME                             = "RADARGRAM COLUMN"
+  START_BYTE                       = 1
+  BYTES                            = 5
+  DATA_TYPE                        = ASCII_INTEGER
+  DESCRIPTION                      = "Radargram column."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 2
+  NAME                             = "NADIR_RETURN_LATITUDE"
+  START_BYTE                       = 7
+  BYTES                            = 10
+  DATA_TYPE                        = TIME
+  DESCRIPTION                      = "Latitude of nadir return."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 3
+  NAME                             = "NADIR_RETURN_LONGITUDE"
+  UNIT                             = DEGREE
+  START_BYTE                       = 18
+  BYTES                            = 9
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Longitude of nadir return."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 4
+  NAME                             = "NADIR_RETURN_ELEV"
+  UNIT                             = METER
+  START_BYTE                       = 28
+  BYTES                            = 6
+  DATA_TYPE                        = SIGNED_INTEGER
+  DESCRIPTION                      = "Elevation of nadir return above the IAU2000 Mars ellipsoid."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 5
+  NAME                             = "NADIR_RETURN_SAMPLE"
+  UNIT                             = "N/A"
+  START_BYTE                       = 35
+  BYTES                            = 8
+  DATA_TYPE                        = UNSIGNED_INTEGER
+  DESCRIPTION                      = "Sample number of the nadir return in the
+                                      radargram column, zero-indexed."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 6
+  NAME                             = "FIRST_RETURN_LATITUDE"
+  START_BYTE                       = 44
+  BYTES                            = 10
+  DATA_TYPE                        = TIME
+  DESCRIPTION                      = "Latitude of first return."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 7
+  NAME                             = "FIRST_RETURN_LONGITUDE"
+  UNIT                             = DEGREE
+  START_BYTE                       = 55
+  BYTES                            = 9
+  DATA_TYPE                        = PC_REAL
+  DESCRIPTION                      = "Longitude of first return."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 8
+  NAME                             = "FIRST_RETURN_ELEV"
+  UNIT                             = METER
+  START_BYTE                       = 65
+  BYTES                            = 6
+  DATA_TYPE                        = SIGNED_INTEGER
+  DESCRIPTION                      = "Elevation of first return above the IAU2000 Mars ellipsoid."
+ END_OBJECT                        = COLUMN
+
+ OBJECT                            = COLUMN
+  COLUMN_NUMBER                    = 9
+  NAME                             = "FIRST_RETURN_SAMPLE"
+  UNIT                             = "N/A"
+  START_BYTE                       = 72
+  BYTES                            = 8
+  DATA_TYPE                        = UNSIGNED_INTEGER
+  DESCRIPTION                      = "Sample number of the first return in the
+                                      radargram column, zero-indexed."
+ END_OBJECT                        = COLUMN
+END_OBJECT                         = TABLE
+
+END

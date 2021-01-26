@@ -40,28 +40,22 @@ def prep(confDict, dem, nav):
 
     samps = confDict["simParams"]["tracesamples"]
     traces = len(nav)
-    if out["combined"] or out["combinedadj"] or out["binary"]:
-        oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
+    
+    oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
+    oDict["left"] = np.zeros((samps, traces)).astype(np.float64)
+    oDict["right"] = np.zeros((samps, traces)).astype(np.float64)
 
-    if out["left"]:
-        oDict["left"] = np.zeros((samps, traces)).astype(np.float64)
+    numCTfacets = int(
+        2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"]
+    )
+    oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(
+        np.float64
+    )  # echo power
+    oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(
+        np.bool
+    )  # first return
 
-    if out["right"]:
-        oDict["right"] = np.zeros((samps, traces)).astype(np.float64)
-
-    if out["echomap"] or out["echomapadj"]:
-        numCTfacets = int(
-            2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"]
-        )
-        oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(
-            np.float64
-        )  # echo power
-        oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(
-            np.bool
-        )  # first return
-
-    if out["fret"] or out["showfret"]:
-        oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
+    oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
 
     # Remove duplicate entries, calculate inverse
     nav, inv = findDupe(nav)
@@ -98,6 +92,8 @@ def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
 
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 
+    #print("REEEE CHANGE demcrs to dem.crs REEEEEE")
+    #demcrs = "+proj=longlat +a=3396190 +no_defs"
     demX, demY, demZ = pyproj.transform(
         xyzsys, dem.crs, corners[:, 0], corners[:, 1], corners[:, 2]
     )

@@ -23,6 +23,16 @@ def parseCmd():
         dest="outPath",
         help="Path to output products - overrides any path in config file",
     )
+    parser.add_argument(
+        "-l",
+        dest="lblPath",
+        help="Path to PDS3 label",
+    )
+    parser.add_argument(
+        "-t",
+        dest="tmplPath",
+        help="Path to PDS3 and PDS4 label templates",
+    )
     args = parser.parse_args()
 
     # Store in dict, expand any relative paths
@@ -43,6 +53,19 @@ def parseCmd():
         argDict["outPath"] = os.path.abspath(args.outPath)
     else:
         argDict["outPath"] = None
+
+    if args.lblPath is not None:
+        argDict["lblPath"] = os.path.abspath(args.lblPath)
+    else:
+        argDict["lblPath"] = None
+
+    if args.lblPath is not None:
+        argDict["tmplPath"] = os.path.abspath(args.tmplPath)
+    else:
+        argDict["tmplPath"] = None
+
+
+
 
     return argDict
 
@@ -82,6 +105,10 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
+    confDict["paths"]["lblpath"] = argDict["lblPath"]
+
+    confDict["paths"]["tmplpath"] = argDict["tmplPath"]
+
     if confDict["paths"]["sigpath"].strip() not in (None, ''):
         confDict["simParams"]["coherent"] = True
     else:
@@ -116,8 +143,8 @@ def readConfig(argDict):
 
     navfile = confDict["paths"]["navpath"].split("/")[-1]
     navname = navfile.split(".")[0]
-    confDict["paths"]["outpath"] = confDict["paths"]["outpath"] + navname + "_"
-
+    confDict["paths"]["outpath"] = confDict["paths"]["outpath"] + navname.replace("geom","")
+    
     # Set log file path
     confDict["paths"]["logpath"] = confDict["paths"]["outpath"] + "simLog.txt"
 

@@ -1,0 +1,42 @@
+PDS_VERSION_ID                = PDS3
+
+/* File characteristics */
+RECORD_TYPE                   = FIXED_LENGTH
+RECORD_BYTES                  = [NUM_TRACE*4]
+FILE_RECORDS                  = 179
+
+/* Pointers to objects in file */
+^IMAGE                             = "[SIM_NAME3]_SIM_EMAP.IMG"
+
+/* Identification data elements */
+DATA_SET_ID                        = "MRO_SHARAD_SIMULATIONSV1.0"
+PRODUCT_ID                         = "[SIM_NAME3]_EMAP"
+INSTRUMENT_HOST_ID                 = "MRO"
+INSTRUMENT_HOST_NAME               = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_ID                      = "SHARAD"
+INSTRUMENT_NAME                    = "SHALLOW RADAR"
+TARGET_NAME                        = "MARS"
+ORBIT_NUMBER                       = [ORBIT_NUM]
+MRO:START_SUB_SPACECRAFT_LONGITUDE = [START_LON] <DEGREE>
+MRO:START_SUB_SPACECRAFT_LATITUDE  = [START_LAT] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LONGITUDE  = [STOP_LON] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LATITUDE   = [STOP_LAT] <DEGREE>
+START_TIME                         = [START_DATETIME]
+STOP_TIME                          = [STOP_DATETIME]
+SPACECRAFT_CLOCK_START_COUNT       = "UNK"
+SPACECRAFT_CLOCK_STOP_COUNT        = "UNK"
+PRODUCT_CREATION_TIME              = [SIM_TIME_UTC]
+PRODUCT_VERSION_ID                 = "2"
+PRODUCER_INSTITUTION_NAME          = "UNIVERSITY OF ARIZONA"
+
+
+/* Image information */
+OBJECT                         = IMAGE
+ LINES                         = 3600
+ LINE_SAMPLES                  = [NUM_TRACE]
+ SAMPLE_TYPE                   = IEEE_REAL
+ SAMPLE_BITS                   = 32
+ DESCRIPTION                   = "Simulated surface backscatter unprojected map view."
+END_OBJECT                     = IMAGE
+
+END

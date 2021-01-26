@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1F00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1F00_1500.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1F00_1910.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<Product_Observational
+    xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+    xmlns:geom="http://pds.nasa.gov/pds4/geom/v1"
+    xsi:schemaLocation=
+    "http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1700.xsd
+    http://pds.nasa.gov/pds4/disp/v1 https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1700.xsd
+    http://pds.nasa.gov/pds4/geom/v1 https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1700_1401.xsd">
+	<Identification_Area>
+		<logical_identifier>urn:nasa:pds:mro_sharad_simulations:data:s_01294501_emap</logical_identifier>
+		<version_id>1.0</version_id>
+		<title>SHARAD surface clutter simulation echo power map product</title>
+		<information_model_version>1.15.0.0</information_model_version>
+		<product_class>Product_Observational</product_class>
+		<Citation_Information>
+			<author_list>Michael S Christoffersen, John W Holt, Scott D. Kempf, PDS node people?</author_list>
+			<publication_year>2021</publication_year>
+			<description>Surface clutter simulations for SHARAD observations</description>
+		</Citation_Information>
+	</Identification_Area>
+	<Observation_Area>
+		<Time_Coordinates>
+            <start_date_time>[START_DATETIME]Z</start_date_time>
+            <stop_date_time>[STOP_DATETIME]Z</stop_date_time>
+		</Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>MRO</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.mars_reconnaissance_orbiter</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>Shallow Radar (SHARAD)</name>
+            <Observing_System_Component>
+                <name>MRO</name>
+                <type>Spacecraft</type>
+                <description>Mars Reconnaissance Orbiter</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.mro</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>SHARAD</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:sharad.mro</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+		<Target_Identification>
+            <name>Mars</name>
+            <type>Planet</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        <Discipline_Area>
+            <disp:Display_Settings>
+                <Local_Internal_Reference>
+                    <local_identifier_reference>Echo Power Map</local_identifier_reference>
+                    <local_reference_type>display_settings_to_array</local_reference_type>
+                </Local_Internal_Reference>
+                <disp:Display_Direction>
+                    <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+                    <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+                    <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+                    <disp:vertical_display_direction>Top to Bottom</disp:vertical_display_direction>
+                </disp:Display_Direction>
+            </disp:Display_Settings>
+            <geom:Geometry>
+            	<geom:Geometry_Orbiter>
+		            <geom:geometry_start_time_utc>[START_DATETIME]Z</geom:geometry_start_time_utc>
+		            <geom:geometry_stop_time_utc>[STOP_DATETIME]Z</geom:geometry_stop_time_utc>
+		            <geom:Surface_Geometry>
+		            	<geom:Surface_Geometry_Start_Stop>
+		            		<geom:start_subspacecraft_latitude unit="deg">[START_LAT]</geom:start_subspacecraft_latitude>
+		            		<geom:stop_subspacecraft_latitude unit="deg">[STOP_LAT]</geom:stop_subspacecraft_latitude>
+		            		<geom:start_subspacecraft_longitude unit="deg">[START_LON]</geom:start_subspacecraft_longitude>
+		            		<geom:stop_subspacecraft_longitude unit="deg">[STOP_LON]</geom:stop_subspacecraft_longitude>
+		            	</geom:Surface_Geometry_Start_Stop>
+		            </geom:Surface_Geometry>
+	            </geom:Geometry_Orbiter>
+            </geom:Geometry>
+        </Discipline_Area>
+	</Observation_Area>
+	<Reference_List>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:browse:[SIM_NAME4]_emap.tif</lid_reference>
+			<reference_type>data_to_browse</reference_type>
+			<comment>Echo power map browse product.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:browse:[SIM_NAME4]_left.tif</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Left side clutter simulation browse product.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:browse:[SIM_NAME4]_right.tif</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Right side clutter simulation browse product.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:browse:[SIM_NAME4]_combined.tif</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Combined left and right side clutter simulation browse product.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:data:[SIM_NAME4]_sim.img</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Left and right side surface clutter simulation.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:how_to_reference_PDS3:rgram_file</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>Sharad radargram corresponding to this simulation.</comment>
+		</Internal_Reference>
+		<Internal_Reference>
+			<lid_reference>urn:nasa:pds:mro_sharad_simulations:data:[SIM_NAME4]_rtrn.csv</lid_reference>
+			<reference_type>data_to_associate</reference_type>
+			<comment>First and nadir return records.</comment>
+		</Internal_Reference>
+		<!-- <Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:geom_files::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Sharad geometry used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:mola_plus_sharad:surface::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Topographic model of Mars used to create this simulation.</comment>
+		</Source_Product_Internal>
+		<Source_Product_Internal>
+			<lidvid_reference>urn:nasa:pds:how_to_reference_PDS3:MOLA_areoid::1</lidvid_reference>
+			<reference_type>data_to_derived_source_product</reference_type>
+			<comment>Model of the Martian areoid used to create this simulation.</comment>
+		</Source_Product_Internal> -->
+	</Reference_List>
+	<File_Area_Observational>
+		<File>
+			<file_name>[SIM_NAME4]_emap.img</file_name>
+			<creation_date_time>[SIM_TIME_UTC]Z</creation_date_time>
+			<file_size unit="byte">[EBIN_SIZE]</file_size>
+			<md5_checksum>[EBIN_MD5]</md5_checksum>
+		</File>
+		<Array_2D_Image>
+			<local_identifier>Echo Power Map</local_identifier>
+            <offset unit="byte">0</offset>
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description>The echo power map 2D image contains an map view of simulated backscattered power from martian topography.</description>
+            <Element_Array>
+                <data_type>IEEE754LSBSingle</data_type>
+            </Element_Array>
+			<Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>179</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>[NUM_TRACE]</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>
+		</Array_2D_Image>
+	</File_Area_Observational>
+</Product_Observational>

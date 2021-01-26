@@ -1,0 +1,149 @@
+PDS_VERSION_ID                = PDS3
+
+/* File characteristics */
+RECORD_TYPE                   = UNDEFINED
+
+/* Pointers to objects in file */
+^TIFFID_HEADER_COMBINED            = ("[SIM_NAME3]_BROWSE_COMBINED.TIF", 1)
+^IMAGE_COMBINED                    = ("[SIM_NAME3]_BROWSE_COMBINED.TIF", 9)
+^TIFFTAG_HEADER_COMBINED           = ("[SIM_NAME3]_BROWSE_COMBINED.TIF", [NUM_TRACE*3600+9])
+
+^TIFFID_HEADER_LEFT                = ("[SIM_NAME3]_BROWSE_LEFT.TIF", 1)
+^IMAGE_LEFT                        = ("[SIM_NAME3]_BROWSE_LEFT.TIF", 9)
+^TIFFTAG_HEADER_LEFT               = ("[SIM_NAME3]_BROWSE_LEFT.TIF", [NUM_TRACE*3600+9])
+
+^TIFFID_HEADER_RIGHT               = ("[SIM_NAME3]_BROWSE_RIGHT.TIF", 1)
+^IMAGE_RIGHT                       = ("[SIM_NAME3]_BROWSE_RIGHT.TIF", 9)
+^TIFFTAG_HEADER_RIGHT              = ("[SIM_NAME3]_BROWSE_RIGHT.TIF", [NUM_TRACE*3600+9])
+
+^TIFFID_HEADER_RIGHT               = ("[SIM_NAME3]_BROWSE_EMAP.TIF", 1)
+^IMAGE_RIGHT                       = ("[SIM_NAME3]_BROWSE_EMAP.TIF", 9)
+^TIFFTAG_HEADER_RIGHT              = ("[SIM_NAME3]_BROWSE_EMAP.TIF", [NUM_TRACE*179+9])
+
+
+/* Identification data elements */
+DATA_SET_ID                        = "MRO_SHARAD_SIMULATIONSV1.0"
+PRODUCT_ID                         = "[SIM_NAME3]_TIFF"
+INSTRUMENT_HOST_ID                 = "MRO"
+INSTRUMENT_HOST_NAME               = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_ID                      = "SHARAD"
+INSTRUMENT_NAME                    = "SHALLOW RADAR"
+TARGET_NAME                        = "MARS"
+ORBIT_NUMBER                       = [ORBIT_NUM]
+MRO:START_SUB_SPACECRAFT_LONGITUDE = [START_LON] <DEGREE>
+MRO:START_SUB_SPACECRAFT_LATITUDE  = [START_LAT] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LONGITUDE  = [STOP_LON] <DEGREE>
+MRO:STOP_SUB_SPACECRAFT_LATITUDE   = [STOP_LAT] <DEGREE>
+START_TIME                         = [START_DATETIME]
+STOP_TIME                          = [STOP_DATETIME]
+SPACECRAFT_CLOCK_START_COUNT       = "UNK"
+SPACECRAFT_CLOCK_STOP_COUNT        = "UNK"
+PRODUCT_CREATION_TIME              = [SIM_TIME_UTC]
+PRODUCT_VERSION_ID                 = "2"
+PRODUCER_INSTITUTION_NAME          = "UNIVERSITY OF ARIZONA"
+
+
+/* Standard TIFF image identification header */
+OBJECT                             = TIFFID_HEADER_COMBINED
+ BYTES                             = 8
+ HEADER_TYPE                       = "N/A"
+ DESCRIPTION                       = "Bytes 1-2: II for LSB
+                                      bytes 3-4: 42,
+                                      bytes 5-8: offset to TIFF tags."
+END_OBJECT                         = TIFFID_HEADER
+
+/* Image information */
+OBJECT                         = IMAGE_COMBINED
+ LINES                         = 3600
+ LINE_SAMPLES                  = [NUM_TRACE]
+ SAMPLE_TYPE                   = UNSIGNED_INTEGER
+ SAMPLE_BITS                   = 8
+ DESCRIPTION                   = "TIFF version of the sum of both simulation image file bands."
+END_OBJECT                     = IMAGE
+
+/* TIFF tags */
+OBJECT                         = TIFFTAG_HEADER_COMBINED
+ BYTES                         = 29200
+ HEADER_TYPE                   = "N/A"
+ DESCRIPTION                   = "TIFF tags."
+END_OBJECT                     = TIFFTAG_HEADER
+
+
+/* Standard TIFF image identification header */
+OBJECT                             = TIFFID_HEADER_LEFT
+ BYTES                             = 8
+ HEADER_TYPE                       = "N/A"
+ DESCRIPTION                       = "Bytes 1-2: II for LSB
+                                      bytes 3-4: 42,
+                                      bytes 5-8: offset to TIFF tags."
+END_OBJECT                         = TIFFID_HEADER
+
+/* Image information */
+OBJECT                         = IMAGE_LEFT
+ LINES                         = 3600
+ LINE_SAMPLES                  = [NUM_TRACE]
+ SAMPLE_TYPE                   = UNSIGNED_INTEGER
+ SAMPLE_BITS                   = 8
+ DESCRIPTION                   = "TIFF version of the simulation image file LEFT band."
+END_OBJECT                     = IMAGE
+
+/* TIFF tags */
+OBJECT                         = TIFFTAG_HEADER_LEFT
+ BYTES                         = 29200
+ HEADER_TYPE                   = "N/A"
+ DESCRIPTION                   = "TIFF tags."
+END_OBJECT                     = TIFFTAG_HEADER
+
+
+/* Standard TIFF image identification header */
+OBJECT                             = TIFFID_HEADER_RIGHT
+ BYTES                             = 8
+ HEADER_TYPE                       = "N/A"
+ DESCRIPTION                       = "Bytes 1-2: II for LSB
+                                        bytes 3-4: 42,
+                                        bytes 5-8: offset to TIFF tags."
+END_OBJECT                         = TIFFID_HEADER
+
+/* Image information */
+OBJECT                         = IMAGE_RIGHT
+ LINES                         = 3600
+ LINE_SAMPLES                  = [NUM_TRACE]
+ SAMPLE_TYPE                   = UNSIGNED_INTEGER
+ SAMPLE_BITS                   = 8
+ DESCRIPTION                   = "TIFF version of the simulation image file RIGHT band."
+END_OBJECT                     = IMAGE
+
+/* TIFF tags */
+OBJECT                         = TIFFTAG_HEADER_RIGHT
+ BYTES                         = 29200
+ HEADER_TYPE                   = "N/A"
+ DESCRIPTION                   = "TIFF tags."
+END_OBJECT                     = TIFFTAG_HEADER
+
+
+/* Standard TIFF image identification header */
+OBJECT                             = TIFFID_HEADER_EMAP
+ BYTES                             = 8
+ HEADER_TYPE                       = "N/A"
+ DESCRIPTION                       = "Bytes 1-2: II for LSB
+                                        bytes 3-4: 42,
+                                        bytes 5-8: offset to TIFF tags."
+END_OBJECT                         = TIFFID_HEADER
+
+/* Image information */
+OBJECT                         = IMAGE_EMAP
+ LINES                         = 179
+ LINE_SAMPLES                  = [NUM_TRACE]
+ SAMPLE_TYPE                   = UNSIGNED_INTEGER
+ SAMPLE_BITS                   = 8
+ DESCRIPTION                   = "TIFF version of the echo power map image file."
+END_OBJECT                     = IMAGE
+
+/* TIFF tags */
+OBJECT                         = TIFFTAG_HEADER_EMAP
+ BYTES                         = 29200
+ HEADER_TYPE                   = "N/A"
+ DESCRIPTION                   = "TIFF tags."
+END_OBJECT                     = TIFFTAG_HEADER
+
+END
