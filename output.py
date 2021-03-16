@@ -105,7 +105,7 @@ def save(confDict, oDict, nav, dem, demData, win):
 
         nbin = (
             ((2 * nr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
-            / 37.5e-9
+            / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
         if out["nadir"]:
@@ -135,7 +135,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         )
         fbin = (
             ((2 * fr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
-            / 37.5e-9
+            / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
         flat, flon, felev = pyproj.transform(

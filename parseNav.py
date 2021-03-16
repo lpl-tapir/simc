@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-areoidPath = "/zippy/MARS/code/modl/simc/dem/mega_128ppd.tif"
+areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
 
 
 def GetNav_akHDF(navfile, navsys, xyzsys):
@@ -157,24 +157,11 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
 
 
 def GetNav_LRS(navfile, navsys, xyzsys):
-    c = 299792458
+    fs = 6.25e6
 
     df = pd.read_csv(navfile, sep=",")
-    
-    print(df.head())
 
-    df["x"], df["y"], df["z"] = pyproj.transform(
-        navsys,
-        xyzsys,
-        df["Position_x_km"].to_numpy()*1e3,
-        df["Position_y_km"].to_numpy()*1e3,
-        df["Position_z_km"].to_numpy()*1e3,
-    )
-
-    df["datum"] = (df["Distance_to_Range0_km"]*1e3*2/c)- (500 * 160e-9)
-
-
-    #df["datum"] = (2 * 1000 * df["DISTANCE_TO_RANGE0"] / c) - (500 * 160e-9)
+    df["datum"] = df["delay"]/1e6
 
     return df[["x", "y", "z", "datum"]]
 
