@@ -1,5 +1,6 @@
 import sys
 import pandas as pd
+import geopandas as gpd
 import rasterio as rio
 import numpy as np
 import pyproj, h5py
@@ -13,6 +14,11 @@ import matplotlib.pyplot as plt
 # time shift in seconds
 
 areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+
+def GetNav_akHypo(navfile, navsys, xyzsys):
+    df = pd.read_csv(navfile)
+    df["datum"] = np.zeros(len(df))
+    return df[["x", "y", "z", "datum"]]
 
 
 def GetNav_akHDF(navfile, navsys, xyzsys):
