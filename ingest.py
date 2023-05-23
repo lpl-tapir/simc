@@ -60,6 +60,7 @@ def readConfig(argDict):
         sys.exit(1)
 
     config = configparser.ConfigParser()
+
     try:
         config.read(argDict["confPath"])
     except Exception as err:
@@ -91,7 +92,8 @@ def readConfig(argDict):
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
         sys.exit(1)
-
+    print(confDict)
+    print("#################################################")
     if not os.path.exists(confDict["paths"]["dempath"]):
         print("Invalid path to DEM file - file does not exist.")
         sys.exit(1)

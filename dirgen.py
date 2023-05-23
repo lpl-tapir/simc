@@ -6,7 +6,12 @@ dir = sys.argv[1]
 obs = []
 for file in os.listdir(dir):
   print(file)
-  ob = file.split('_')[0] + "_" + file.split('_')[1]
+  # For sharad 
+  #ob = file.split('_')[0] + "_" + file.split('_')[1]
+
+  # For marsis
+  ob = file.split('_')[0] + "_" + file.split('_')[1] + "_"  + file.split('_')[2]
+  print(ob)
   if(ob not in obs):
     obs.append(ob)
 
