@@ -96,14 +96,119 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
-    fcalc = calcFacets(
+    fcalc = calcFacetsFriis(
         facets,
         nav["x"][i],
         nav["y"][i],
         nav["z"][i],
+        nav["uv"][i],
         confDict["simParams"]["speedlight"],
     )
 
+    return fcalc
+
+
+
+'''
+Parameters
+---------------
+rx: array of x components of the radii vector to the center of each facet
+ry: array of y components of the radii vector to the center of each facet
+rz: array of z components of the radii vector to the center of each facet
+'''
+def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
+
+    #calc lenght of both vectors
+    mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
+    mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
+
+    dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
+    return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
+
+
+def calcFacetsFriis(f, px, py, pz, ua, c):
+    # Calculate return power and twtt for facets
+    # Based on modified Friis transmission equation
+    # explained in Choudhary, Holt, Kempf 2016
+
+    # Array to hold output data
+    # Col 1 is power
+    # Col 2 is two way travel time
+    # Col 3 is empty
+    # Col 4 is whether the facet is to the right or left of the platform
+    # Col 5 is a flag for whether to use the facet
+    # Cols 6-8 hold x,y,z for the facet center
+    # Col 9 holds the facet's cross track index
+    # Col 10 holds the facet's angle of arrival
+    fcalc = np.zeros((f.shape[0], 11))
+
+    # Calc midpoints
+    mx = (f[:, 0] + f[:, 3] + f[:, 6]) / 3
+    my = (f[:, 1] + f[:, 4] + f[:, 7]) / 3
+    mz = (f[:, 2] + f[:, 5] + f[:, 8]) / 3
+
+    # Calc distances to platform/twtt
+    rx = px - mx
+    ry = py - my
+    rz = pz - mz
+
+    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    
+    # Calculate angles of return
+    theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
+
+    # obtaining the center of the plane from one of the corners of a facet in the center
+    center_facet_index = int(f.shape[0]/6)-1
+    print("center_facet_index {}".format(center_facet_index))
+    print(f[center_facet_index])
+    cx = mx - f[center_facet_index, 3]
+    cy = my - f[center_facet_index, 4]
+    cz = mz - f[center_facet_index, 5]
+
+    phi =  calc_angle(ua[0], ua[1], ua[2], cx, cy, cz)
+    print("ua {}".format(ua))
+    print(cx)
+    print(cy)
+    print(cz)
+
+    print(phi)
+    print(np.min(phi))
+    print(np.max(phi))
+    for i, p in enumerate(phi):
+        if p < 75  or p > 105:
+            print("i: {} phi:{} theta:{} side:{}".format(i, p, theta[i], f[i,10] ))
+
+
+    ## Calc area and normal vector
+    # Calc 2->1 vector
+    f[:, 3] = f[:, 0] - f[:, 3]  # x
+    f[:, 4] = f[:, 1] - f[:, 4]  # y
+    f[:, 5] = f[:, 2] - f[:, 5]  # z
+    # Calc 1->3 vector
+    f[:, 0] = f[:, 6] - f[:, 0]  # x
+    f[:, 1] = f[:, 7] - f[:, 1]  # y
+    f[:, 2] = f[:, 8] - f[:, 2]  # z
+    # Calc cross product
+    f[:, 6:9] = np.cross(f[:, 3:6], f[:, 0:3])
+    area = np.sqrt(f[:, 6] ** 2 + f[:, 7] ** 2 + f[:, 8] ** 2) / 2
+
+    ## Calc power
+    # Dot product between facet center -> platform and normal to facet
+    ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
+    ct = ct / (r * area * 2)
+
+    
+
+    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+    fcalc[:, 1] = 2 * r / c  # twtt
+    fcalc[:, 2] = f[:, 10]  # right or left
+    fcalc[:, 4] = 1  # use all facets for now
+    fcalc[:, 5] = mx  # Facet centers
+    fcalc[:, 6] = my
+    fcalc[:, 7] = mz
+    fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
+    fcalc[:, 9] = theta
+    fcalc[:, 10] = phi
     return fcalc
 
 
@@ -202,7 +307,7 @@ def genFacets(s, valid):
     # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-
+    print("gen facets {} {}".format(h,w))
     nfacet = (w - 1) * (h - 1) * 2  # number of facets
     qt = int(nfacet / 4)  # quarter
     hf = int(nfacet / 2)  # half
