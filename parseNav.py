@@ -244,7 +244,7 @@ def GetNav_LRS(navfile, navsys, xyzsys):
     samplingFrequency = 37.5e-9
     traceSamples = 3600
 
-    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * traceSamples / 2))
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
