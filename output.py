@@ -51,7 +51,20 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             )
             frFacets = cti[cbin == cbin.min()]
             oDict["frmap"][frFacets, j] = 1
-
+    
+        filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
+        print("saving {}...................".format(filename))
+        
+        np.savetxt(
+            confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
+            fcalc[:,[0,1,9,10]],
+            #fcalc[:,[0,1,2,8,9,10]],
+            delimiter=",",
+            header="power,twtt,theta,phi",
+            fmt="%.6e,%.6e,%.6f,%.6f",
+            comments="",
+        )
+    
     return 0
 
 
@@ -159,7 +172,7 @@ def save(confDict, oDict, nav, dem, demData, win):
                 fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
-
+    
     if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
