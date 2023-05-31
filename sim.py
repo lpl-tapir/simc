@@ -96,12 +96,14 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
+    center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
     fcalc = calcFacetsFriis(
         facets,
         nav["x"][i],
         nav["y"][i],
         nav["z"][i],
         nav["uv"][i],
+        center_plane,
         confDict["simParams"]["speedlight"],
     )
 
@@ -125,8 +127,22 @@ def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
     dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
     return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
 
+def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
+    # obtaining the center of the plane from one of the corners of a facet in the center
+    # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
+    
+    ctSteps = ctDist/ctStep
+    atSteps = atDist/atStep
+    #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
+    center_facet_index = int(ctSteps*atSteps+ctSteps-1)
+    print("center_facet_index {}".format(center_facet_index))
+    print(f[center_facet_index])
+    cx = f[center_facet_index, 3]
+    cy = f[center_facet_index, 4]
+    cz = f[center_facet_index, 5]
+    return [cx, cy, cz]
 
-def calcFacetsFriis(f, px, py, pz, ua, c):
+def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     # Calculate return power and twtt for facets
     # Based on modified Friis transmission equation
     # explained in Choudhary, Holt, Kempf 2016
@@ -154,31 +170,32 @@ def calcFacetsFriis(f, px, py, pz, ua, c):
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
     
+
+    print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
+    print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
+    print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
     # Calculate angles of return
     theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
+    '''
     # obtaining the center of the plane from one of the corners of a facet in the center
-    center_facet_index = int(f.shape[0]/6)-1
+    # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
+    center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
     print("center_facet_index {}".format(center_facet_index))
     print(f[center_facet_index])
-    cx = mx - f[center_facet_index, 3]
-    cy = my - f[center_facet_index, 4]
-    cz = mz - f[center_facet_index, 5]
+    '''
+    cmx = mx - center_plane[0]
+    cmy = my - center_plane[1]
+    cmz = mz - center_plane[2]
 
-    phi =  calc_angle(ua[0], ua[1], ua[2], cx, cy, cz)
+    phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
+    phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
+    '''
     print("ua {}".format(ua))
     print(cx)
     print(cy)
     print(cz)
-
-    print(phi)
-    print(np.min(phi))
-    print(np.max(phi))
-    for i, p in enumerate(phi):
-        if p < 75  or p > 105:
-            print("i: {} phi:{} theta:{} side:{}".format(i, p, theta[i], f[i,10] ))
-
-
+    '''
     ## Calc area and normal vector
     # Calc 2->1 vector
     f[:, 3] = f[:, 0] - f[:, 3]  # x
@@ -197,8 +214,6 @@ def calcFacetsFriis(f, px, py, pz, ua, c):
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    
-
     fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
@@ -209,6 +224,11 @@ def calcFacetsFriis(f, px, py, pz, ua, c):
     fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
     fcalc[:, 9] = theta
     fcalc[:, 10] = phi
+    '''
+    for i, p in enumerate(fcalc[:, 10]):
+        if p < 60  or p > 120:
+            print("i: {} phi:{} theta:{} side:{} power: {}  twtt:{}".format(i, fcalc[i,10], fcalc[i,9], fcalc[i,2], fcalc[i,0], fcalc[i,1] ))
+    '''
     return fcalc
 
 
