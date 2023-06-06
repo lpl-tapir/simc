@@ -91,6 +91,28 @@ def GetNav_akHypo(navfile, navsys, xyzsys):
     return df[["x", "y", "z", "datum"]]
 
 
+def GetNav_DJI(navfile, navsys, xyzsys):
+
+    df = pd.read_csv(navfile, sep=",")
+
+    print(df)
+    c = 299792458
+
+    df["x"], df["y"], df["z"] = pyproj.transform(
+        navsys,
+        xyzsys,
+        df["lon"].to_numpy(),
+        df["lat"].to_numpy(),
+        df["hgt"].to_numpy(),
+    )
+
+    #df["datum"] = 0 * df["x"]
+    traceSamples = 1000
+    df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
+    print(df)
+    return df[["x", "y", "z", "datum"]]
+
+
 def GetNav_akHDF(navfile, navsys, xyzsys):
     h5 = h5py.File(navfile, "r")
     if "nav0" in h5["ext"].keys():
@@ -242,7 +264,7 @@ def GetNav_LRS(navfile, navsys, xyzsys):
     c = 299792458
     spacecraftHeight = 30000 #m
     samplingFrequency = 37.5e-9
-    traceSamples = 3600
+    traceSamples = 7200
 
     df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
     ### Roberto ###

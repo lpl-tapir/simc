@@ -5,6 +5,7 @@ import pyproj
 import matplotlib.pyplot as plt
 import skimage.transform
 import curve
+import h5py
 
 
 def build(confDict, oDict, fcalc, nav, i, oi):
@@ -18,6 +19,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     twtt = fcalc[:, 1]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
+    cbin_copy = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
   
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
@@ -49,9 +51,31 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap"][:, j] = np.bincount(
                 cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
             )
-            frFacets = cti[cbin == cbin.min()]
+            frFacets = cti[cbin_copy == cbin_copy.min()]
+            #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
+            #ifrFacets = cti[cbin == cbin.min()]
             oDict["frmap"][frFacets, j] = 1
+
+        oDict["pwr"][j,:] = fcalc[:,0]
+        oDict["twtt"][j,:] = fcalc[:,1]
+        oDict["theta"][j, :] = fcalc[:,9]
+        oDict["phi"][j,:] = fcalc[:,10]
     
+        mlon, mlat, melev = pyproj.transform(
+            confDict["navigation"]["xyzsys"],
+            confDict["navigation"]["llesys"],
+            fcalc[:,5],
+            fcalc[:,6],
+            fcalc[:,7],
+        
+        )
+        print(mlat)
+        print(mlon)
+        print(melev)
+        oDict["mx"][j,:] = mlat
+        oDict["my"][j, :] = mlon
+        oDict["mz"][j,:] = melev
+        ''' 
         filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
         print("saving {}...................".format(filename))
         
@@ -64,6 +88,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             fmt="%.6e,%.6e,%.6f,%.6f",
             comments="",
         )
+        '''
     
     return 0
 
@@ -110,7 +135,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         nx, ny, nz = pyproj.transform(
             dem.crs, confDict["navigation"]["xyzsys"], gx, gy, demz
         )
-        nlat, nlon, nelev = pyproj.transform(
+        nlon, nlat, nelev = pyproj.transform(
             dem.crs, confDict["navigation"]["llesys"], gx, gy, demz
         )
 
@@ -151,7 +176,7 @@ def save(confDict, oDict, nav, dem, demData, win):
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
-        flat, flon, felev = pyproj.transform(
+        flon, flat, felev = pyproj.transform(
             confDict["navigation"]["xyzsys"],
             confDict["navigation"]["llesys"],
             fret[:, 0],
@@ -172,7 +197,35 @@ def save(confDict, oDict, nav, dem, demData, win):
                 fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
-    
+    slon, slat, selev = pyproj.transform(
+        confDict["navigation"]["xyzsys"],
+        confDict["navigation"]["llesys"],
+        x,            
+        y,
+        z,
+    )
+    print(slat[0])
+    print(slon[0])
+    print(selev[0])
+    print(oDict["pwr"][0])
+    print(oDict["twtt"][0])
+    print(oDict["theta"][0])
+    print(oDict["phi"][0])
+    print(oDict["mx"][0])
+    print(oDict["my"][0])
+    print(oDict["mz"][0])
+    with h5py.File( confDict["paths"]["outpath"] + "out.h5", 'w' ) as hf:
+        hf.create_dataset("spacecraft_lat", data=slat, dtype=np.float32, compression="gzip")
+        hf.create_dataset("spacecraft_lon", data=slon, dtype=np.float32, compression="gzip")
+        hf.create_dataset("spacecraft_elev", data=selev, dtype=np.float32, compression="gzip")
+        hf.create_dataset("facets_pwr", data=oDict["pwr"], dtype=np.float64, compression="gzip")
+        hf.create_dataset("facets_twtt", data=oDict["twtt"], dtype=np.float64, compression="gzip")
+        hf.create_dataset("facets_theta", data=oDict["theta"], dtype=np.float32, compression="gzip")
+        hf.create_dataset("facets_phi", data=oDict["phi"], dtype=np.float32, compression="gzip")
+        hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
+        hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
+        hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
+
     if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)

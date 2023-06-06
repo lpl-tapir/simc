@@ -45,6 +45,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid = np.ones(ix.shape).astype(np.bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
+    print("demData {}".format(demData))
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
@@ -97,6 +98,8 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
     center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
+
+    print("get_center_plane {}".format(center_plane))
     fcalc = calcFacetsFriis(
         facets,
         nav["x"][i],
@@ -170,10 +173,12 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
     
+    #print(r)
+    #print(np.min(r))
 
-    print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
-    print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
-    print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
+    #print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
+    #print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
+    #print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
     # Calculate angles of return
     theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
@@ -188,6 +193,26 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     cmy = my - center_plane[1]
     cmz = mz - center_plane[2]
 
+    print("center plane {}".format(center_plane))
+    lon, lat, elev = pyproj.transform(
+        "+proj=geocent +a=1737400 +b=1737400 +no_defs",
+        "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+        center_plane[0],            
+        center_plane[1],
+        center_plane[2],
+    )
+    print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+    lon, lat, elev = pyproj.transform(
+        "+proj=geocent +a=1737400 +b=1737400 +no_defs",
+        "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+        px,            
+        py,
+        pz,            
+    )
+    print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+    
+    print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
+    print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
     phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
     phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
     '''

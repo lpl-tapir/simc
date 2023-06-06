@@ -63,6 +63,18 @@ def prep(confDict, dem, nav):
     if out["fret"] or out["showfret"]:
         oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
 
+    numFacets = int(
+        2 * ( 2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"] ) * ( 2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
+    )
+
+    print("numFacets {}".format(numFacets))
+    oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
+    oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
+    oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
+    oDict["phi"] = np.zeros((traces, numFacets)).astype(np.float32)
+    oDict["mx"] = np.zeros((traces, numFacets)).astype(np.float32)
+    oDict["my"] = np.zeros((traces, numFacets)).astype(np.float32)
+    oDict["mz"] = np.zeros((traces, numFacets)).astype(np.float32)
     # Remove duplicate entries, calculate inverse
     nav, inv = findDupe(nav)
 
