@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+#areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
 
 def GetNav_MARSIS(navfile, navsys, xyzsys):
     c = 299792458
@@ -97,7 +98,6 @@ def GetNav_DJI(navfile, navsys, xyzsys):
 
     print(df)
     c = 299792458
-
     df["x"], df["y"], df["z"] = pyproj.transform(
         navsys,
         xyzsys,
@@ -105,11 +105,9 @@ def GetNav_DJI(navfile, navsys, xyzsys):
         df["lat"].to_numpy(),
         df["hgt"].to_numpy(),
     )
-
-    #df["datum"] = 0 * df["x"]
+    df["datum"] = 0 * df["x"]
     traceSamples = 1000
-    df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
-    print(df)
+    #df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
     return df[["x", "y", "z", "datum"]]
 
 
@@ -208,6 +206,48 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
     return df[["x", "y", "z", "datum"]]
 
 
+def GetNav_FPBgeom_PDS(navfile, navsys, xyzsys):
+    c = 299792458
+    geomCols = [
+        "trace",
+        "time",
+        "lat",
+        "lon",
+        "marsRad",
+        "elev",
+        "radiVel",
+        "tangVel",
+        "SZA",
+        "phaseD",
+    ]
+
+    dtypes = {
+        "lat": np.float128,
+        "lon": np.float128,
+        "elev": np.float128,
+    }
+    df = pd.read_csv(navfile, names=geomCols, dtype=dtypes)
+
+    # Planetocentric lat/lon/radius to X/Y/Z - no need for navsys in this one
+    df["x"] = (
+        (df["elev"] * 1000)
+        * np.cos(np.radians(df["lat"]))
+        * np.cos(np.radians(df["lon"]))
+    )
+    df["y"] = (
+        (df["elev"] * 1000)
+        * np.cos(np.radians(df["lat"]))
+        * np.sin(np.radians(df["lon"]))
+    )
+    df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
+
+    df["datum"] = (1e3*(df["elev"] - 3396000.0)*2.0/c) - (1800.0*37.5e-9)  # modifiying this line from the PDS
+
+    df["areoid"] = 1e3*df["marsRad"] * 0#np.zeros_like(df["x"]) #zval +3396000
+
+    return df[["x", "y", "z", "datum", "time", "areoid"]]
+
+
 def GetNav_QDAetm(navfile, navsys, xyzsys):
     c = 299792458
     etmCols = [
@@ -264,7 +304,7 @@ def GetNav_LRS(navfile, navsys, xyzsys):
     c = 299792458
     spacecraftHeight = 30000 #m
     samplingFrequency = 37.5e-9
-    traceSamples = 7200
+    traceSamples = 4800
 
     df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
     ### Roberto ###

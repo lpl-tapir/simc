@@ -56,6 +56,9 @@ def prep(confDict, dem, nav):
         oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(
             np.float64
         )  # echo power
+        oDict["emap_angles"] = np.zeros((numCTfacets + 1, traces)).astype(
+            np.float64
+        )  # theta integrated along-track
         oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(
             np.bool
         )  # first return
@@ -111,12 +114,15 @@ def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 
     demX, demY, demZ = pyproj.transform(
-        xyzsys, dem.crs, corners[:, 0], corners[:, 1], corners[:, 2]
+        #xyzsys, dem.crs, corners[:, 0], corners[:, 1], corners[:, 2]
+        xyzsys, "+proj=longlat +R=3396190 +no_defs", corners[:, 0], corners[:, 1], corners[:, 2]
     )
     gt = ~dem.transform
+    print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
-
+    
+    print(bounds)
     with open(confDict["paths"]["logpath"], "a") as fd:
         if bounds[0] < 0:
             fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))

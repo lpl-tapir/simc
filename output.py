@@ -17,6 +17,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     lr = fcalc[:, 2]
     pwr = fcalc[:, 0]
     twtt = fcalc[:, 1]
+    theta = fcalc[:,9]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
     cbin_copy = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
@@ -51,16 +52,20 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap"][:, j] = np.bincount(
                 cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
             )
+            oDict["emap_angles"][:, j] = np.bincount(
+                cti, weights=theta, minlength=oDict["emap"].shape[0]
+            )
             frFacets = cti[cbin_copy == cbin_copy.min()]
             #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
-            #ifrFacets = cti[cbin == cbin.min()]
+            frFacets = cti[cbin == cbin.min()]
             oDict["frmap"][frFacets, j] = 1
 
         oDict["pwr"][j,:] = fcalc[:,0]
         oDict["twtt"][j,:] = fcalc[:,1]
         oDict["theta"][j, :] = fcalc[:,9]
         oDict["phi"][j,:] = fcalc[:,10]
-    
+        
+        '''
         mlon, mlat, melev = pyproj.transform(
             confDict["navigation"]["xyzsys"],
             confDict["navigation"]["llesys"],
@@ -75,6 +80,8 @@ def build(confDict, oDict, fcalc, nav, i, oi):
         oDict["mx"][j,:] = mlat
         oDict["my"][j, :] = mlon
         oDict["mz"][j,:] = melev
+        '''
+
         ''' 
         filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
         print("saving {}...................".format(filename))
@@ -93,7 +100,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     return 0
 
 
-def save(confDict, oDict, nav, dem, demData, win):
+def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     out = confDict["outputs"]
     frColor = [255, 0, 255]
@@ -106,7 +113,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         z = nav["z"].to_numpy()
 
         gx, gy, gz = pyproj.transform(
-            confDict["navigation"]["xyzsys"], dem.crs, x, y, z
+            confDict["navigation"]["xyzsys"], demCrs, x, y, z
         )
 
         gt = ~dem.window_transform(win)
@@ -133,10 +140,11 @@ def save(confDict, oDict, nav, dem, demData, win):
         nvalid[demz == dem.nodata] = 0
 
         nx, ny, nz = pyproj.transform(
-            dem.crs, confDict["navigation"]["xyzsys"], gx, gy, demz
+            demCrs, confDict["navigation"]["xyzsys"], gx, gy, demz
         )
         nlon, nlat, nelev = pyproj.transform(
-            dem.crs, confDict["navigation"]["llesys"], gx, gy, demz
+            #dem.crs, confDict["navigation"]["llesys"], gx, gy, demz
+            confDict["navigation"]["xyzsys"], demCrs, nx, ny, demz # from pds
         )
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
@@ -154,7 +162,7 @@ def save(confDict, oDict, nav, dem, demData, win):
             nadInfo[:, 3] = nbin
             np.savetxt(
                 confDict["paths"]["outpath"] + "nadir.csv",
-                nadInfo,
+               nadInfo,
                 delimiter=",",
                 header="lat,lon,elev_IAU2000,sample",
                 fmt="%.6f,%.6f,%.3f,%d",
@@ -178,7 +186,8 @@ def save(confDict, oDict, nav, dem, demData, win):
 
         flon, flat, felev = pyproj.transform(
             confDict["navigation"]["xyzsys"],
-            confDict["navigation"]["llesys"],
+            "+proj=longlat +R=3396190 +no_defs", #from pds
+            #confDict["navigation"]["llesys"],
             fret[:, 0],
             fret[:, 1],
             fret[:, 2],
@@ -197,6 +206,7 @@ def save(confDict, oDict, nav, dem, demData, win):
                 fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
+    '''
     slon, slat, selev = pyproj.transform(
         confDict["navigation"]["xyzsys"],
         confDict["navigation"]["llesys"],
@@ -225,7 +235,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
         hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
         hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
-
+    '''
     if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
@@ -279,6 +289,8 @@ def save(confDict, oDict, nav, dem, demData, win):
 
     if out["echomap"]:
         egram = oDict["emap"] * (255.0 / oDict["emap"].max())
+        egram_color = np.copy(egram)
+
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
@@ -287,6 +299,7 @@ def save(confDict, oDict, nav, dem, demData, win):
     if out["echomapadj"]:
         # Resize
         emap = oDict["emap"]
+        emap_angles = oDict["emap_angles"]
         postSpace = np.sqrt(
             np.diff(nav["x"]) ** 2 + np.diff(nav["y"]) ** 2 + np.diff(nav["z"]) ** 2
         ).mean()
@@ -302,6 +315,7 @@ def save(confDict, oDict, nav, dem, demData, win):
         frgram = np.zeros((yDim, frmap.shape[1]))
 
         egram = skimage.transform.resize(emap, (yDim, emap.shape[1]))
+        egram_angles = skimage.transform.resize(emap_angles, (yDim, emap_angles.shape[1]))
         # Shrink emap and frmap
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
@@ -314,11 +328,32 @@ def save(confDict, oDict, nav, dem, demData, win):
         egram = np.maximum(0, egram)
 
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
-
+        
+        '''
+        egram_color1 = np.copy(egram)
+        egram_color2 = np.copy(egram)
+        egram_color3 = np.copy(egram)
+        print("----------------------TTTTTTTTTTTTTTT--------------")
+        print(egram.shape)
+        print(egram_angles.shape)
+        x = (egram_angles / 3) % 2 < 1 
+        print(x.shape)
+        print(egram_angles)
+        angle = 5
+        shift = 2.5
+        print("----------------------TTTTTTTTTTTTTTT--------------")
+        egram_color1[(((egram_angles / 12) + shift)  / angle) % 2 < 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 < 1] * 0.7
+        #egram_color2[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.7
+        egram_color3 = egram  * 0.7#[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.6
+        estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
+        estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+        '''
+        
         for i in range(egram.shape[1]):
             fri = frgram[:, i] > 0
             estack[fri, i] = frColor
             estack[estack.shape[0] // 2, i] = nColor
+
 
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")

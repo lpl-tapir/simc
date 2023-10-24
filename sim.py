@@ -36,6 +36,9 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     else:
         # Transform to dem CRS and sample DEM
         gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+        print("gx: {}".format(gx))
+        print("gy: {}".format(gy))
+        print("gz: {}".format(gz))
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -45,7 +48,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid = np.ones(ix.shape).astype(np.bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
-    print("demData {}".format(demData))
+    #print("demData {}".format(demData))
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
@@ -97,7 +100,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
-    center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
+    center_plane = None#get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
 
     print("get_center_plane {}".format(center_plane))
     fcalc = calcFacetsFriis(
@@ -166,61 +169,62 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     my = (f[:, 1] + f[:, 4] + f[:, 7]) / 3
     mz = (f[:, 2] + f[:, 5] + f[:, 8]) / 3
 
+
     # Calc distances to platform/twtt
     rx = px - mx
     ry = py - my
     rz = pz - mz
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    if center_plane != None:
     
-    #print(r)
-    #print(np.min(r))
+        #print(r)
+        #print(np.min(r))       
+        #print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
+        #print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
+        #print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
+        # Calculate angles of return
+        theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
-    #print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
-    #print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
-    #print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
-    # Calculate angles of return
-    theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
+        '''
+        # obtaining the center of the plane from one of the corners of a facet in the center
+        # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
+        center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
+        print("center_facet_index {}".format(center_facet_index))
+        print(f[center_facet_index])
+       '''
+        cmx = mx - center_plane[0]
+        cmy = my - center_plane[1]
+        cmz = mz - center_plane[2]
 
-    '''
-    # obtaining the center of the plane from one of the corners of a facet in the center
-    # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
-    center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
-    print("center_facet_index {}".format(center_facet_index))
-    print(f[center_facet_index])
-    '''
-    cmx = mx - center_plane[0]
-    cmy = my - center_plane[1]
-    cmz = mz - center_plane[2]
-
-    print("center plane {}".format(center_plane))
-    lon, lat, elev = pyproj.transform(
-        "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-        "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        center_plane[0],            
-        center_plane[1],
-        center_plane[2],
-    )
-    print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-    lon, lat, elev = pyproj.transform(
-        "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-        "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        px,            
-        py,
-        pz,            
-    )
-    print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+        print("center plane {}".format(center_plane))
+        lon, lat, elev = pyproj.transform(
+            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
+            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+            center_plane[0],            
+            center_plane[1],
+            center_plane[2],
+        )
+        print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+        lon, lat, elev = pyproj.transform(
+            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
+            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+            px,            
+            py,
+            pz,            
+        )
+        print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
     
-    print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
-    print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
-    phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
-    phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
-    '''
-    print("ua {}".format(ua))
-    print(cx)
-    print(cy)
-    print(cz)
-    '''
+        print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
+        print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
+        phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
+        phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
+        '''
+        print("ua {}".format(ua))
+        print(cx)
+        print(cy)
+        print(cz)
+        '''
     ## Calc area and normal vector
     # Calc 2->1 vector
     f[:, 3] = f[:, 0] - f[:, 3]  # x
@@ -247,8 +251,9 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     fcalc[:, 6] = my
     fcalc[:, 7] = mz
     fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
-    fcalc[:, 9] = theta
-    fcalc[:, 10] = phi
+    if center_plane != None:
+        fcalc[:, 9] = theta
+        fcalc[:, 10] = phi
     '''
     for i, p in enumerate(fcalc[:, 10]):
         if p < 60  or p > 120:
@@ -352,7 +357,7 @@ def genFacets(s, valid):
     # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-    print("gen facets {} {}".format(h,w))
+    #print("gen facets {} {}".format(h,w))
     nfacet = (w - 1) * (h - 1) * 2  # number of facets
     qt = int(nfacet / 4)  # quarter
     hf = int(nfacet / 2)  # half
