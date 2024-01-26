@@ -105,7 +105,7 @@ def prep(confDict, dem, nav):
     return nav, oDict, inv
 
 
-def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
+def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
     corners = np.zeros((len(nav) * 9, 3))
 
     for i in range(len(nav)):
@@ -114,8 +114,7 @@ def calcBounds(confDict, dem, nav, xyzsys, atDist, ctDist):
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 
     demX, demY, demZ = pyproj.transform(
-        #xyzsys, dem.crs, corners[:, 0], corners[:, 1], corners[:, 2]
-        xyzsys, "+proj=longlat +R=3396190 +no_defs", corners[:, 0], corners[:, 1], corners[:, 2]
+        xyzsys, demCrs, corners[:, 0], corners[:, 1], corners[:, 2]
     )
     gt = ~dem.transform
     print("gt {}".format(gt))

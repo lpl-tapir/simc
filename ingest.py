@@ -191,7 +191,7 @@ def readConfig(argDict):
     }
 
     lleD = {
-        "mars": "+proj=longlat +a=3396190 +b=3396190 +no_defs",
+        "mars": "+proj=longlat +R=3396190 +no_defs",
         #"mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs",
         "moon": "+proj=longlat +a=1737400 +b=1737400 +no_defs",
         "earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",

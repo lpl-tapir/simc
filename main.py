@@ -43,13 +43,17 @@ def main():
             confDict["navigation"]["xyzsys"], demCrs
         )
 
+    print("-----------------------------------------------")
     print("xform {}".format(xform))
+    print(confDict["navigation"]["xyzsys"])
+    print("-----------------------------------------------")
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
 
     bounds = prep.calcBounds(
         confDict,
         dem,
+        demCrs,
         nav,
         confDict["navigation"]["xyzsys"],
         confDict["facetParams"]["atdist"],
@@ -69,9 +73,6 @@ def main():
     win = rio.windows.Window.from_slices(rowSub, colSub)
     print("win {}".format(win))
     demData = dem.read(1, window=win)
-    print("dem shape {}".format(dem.read(1).shape))
-    print("demData shape {}".format(demData.shape))
-    #demData = dem.read(1)
 
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))

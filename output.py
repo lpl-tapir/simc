@@ -60,10 +60,10 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             frFacets = cti[cbin == cbin.min()]
             oDict["frmap"][frFacets, j] = 1
 
-        oDict["pwr"][j,:] = fcalc[:,0]
-        oDict["twtt"][j,:] = fcalc[:,1]
-        oDict["theta"][j, :] = fcalc[:,9]
-        oDict["phi"][j,:] = fcalc[:,10]
+        #oDict["pwr"][j,:] = fcalc[:,0]
+        #oDict["twtt"][j,:] = fcalc[:,1]
+        #oDict["theta"][j, :] = fcalc[:,9]
+        #oDict["phi"][j,:] = fcalc[:,10]
         
         '''
         mlon, mlat, melev = pyproj.transform(
@@ -142,9 +142,11 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         nx, ny, nz = pyproj.transform(
             demCrs, confDict["navigation"]["xyzsys"], gx, gy, demz
         )
+
+        ## CHECK THIS LINE              <------------------------------------------------------
         nlon, nlat, nelev = pyproj.transform(
-            #dem.crs, confDict["navigation"]["llesys"], gx, gy, demz
-            confDict["navigation"]["xyzsys"], demCrs, nx, ny, demz # from pds
+            demCrs, confDict["navigation"]["llesys"], gx, gy, demz
+            #confDict["navigation"]["xyzsys"], demCrs, nx, ny, demz # from pds
         )
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
@@ -186,8 +188,8 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
         flon, flat, felev = pyproj.transform(
             confDict["navigation"]["xyzsys"],
-            "+proj=longlat +R=3396190 +no_defs", #from pds
-            #confDict["navigation"]["llesys"],
+            #"+proj=longlat +R=3396190 +no_defs", #from pds
+            confDict["navigation"]["llesys"],
             fret[:, 0],
             fret[:, 1],
             fret[:, 2],
@@ -305,7 +307,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
         yDim = np.floor(emap.shape[0] * ySquish).astype(np.int32) + 1
-
+        print(yDim)
         idx = np.arange(0, emap.shape[0])
         nidx = np.floor(idx * ySquish).astype(np.int32)
         egram = np.zeros((yDim, emap.shape[1]))
@@ -333,7 +335,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         egram_color1 = np.copy(egram)
         egram_color2 = np.copy(egram)
         egram_color3 = np.copy(egram)
-        print("----------------------TTTTTTTTTTTTTTT--------------")
         print(egram.shape)
         print(egram_angles.shape)
         x = (egram_angles / 3) % 2 < 1 
@@ -341,7 +342,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         print(egram_angles)
         angle = 5
         shift = 2.5
-        print("----------------------TTTTTTTTTTTTTTT--------------")
         egram_color1[(((egram_angles / 12) + shift)  / angle) % 2 < 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 < 1] * 0.7
         #egram_color2[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.7
         egram_color3 = egram  * 0.7#[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.6

@@ -241,9 +241,13 @@ def GetNav_FPBgeom_PDS(navfile, navsys, xyzsys):
     )
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
+    # CHECK THIS LINE               <------------------------------------------------------------------------------
+    #df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)  
     df["datum"] = (1e3*(df["elev"] - 3396000.0)*2.0/c) - (1800.0*37.5e-9)  # modifiying this line from the PDS
 
-    df["areoid"] = 1e3*df["marsRad"] * 0#np.zeros_like(df["x"]) #zval +3396000
+    # CHECK THIS LINE               <------------------------------------------------------------------------------
+    #df["areoid"] = 1e3*df["marsRad"] * 0#np.zeros_like(df["x"]) #zval +3396000
+    df["areoid"] = np.zeros_like(df["x"]) #zval +3396000
 
     return df[["x", "y", "z", "datum", "time", "areoid"]]
 
