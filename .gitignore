@@ -12,3 +12,6 @@ batch/jobs/
 
 # Release
 simc.zip
+
+# Jupyter stff
+.ipynb_checkpoints
