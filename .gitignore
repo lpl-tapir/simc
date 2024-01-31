@@ -13,5 +13,9 @@ batch/jobs/
 # Release
 simc.zip
 
-# Jupyter stff
+# Jupyter
 .ipynb_checkpoints
+
+# Packaging
+simc.egg-info/
+build/

@@ -1,0 +1,32 @@
+[build-system]
+requires = [
+    "setuptools>=61.0.0",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simc"
+version = "0.1.0"
+description = "Multi-planet surface clutter simulation"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {file = "LICENSE.txt"}
+authors = [
+    {name = "Michael Christoffersen"},
+    {email = "mchristo28@gmail.com"}
+]
+dependencies = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "Pillow",
+    "rasterio",
+    "pyproj",
+    "h5py",
+    "scikit-image",
+    "geopandas"
+]
+
+[project.urls]
+repository = "https://github.com/lpl-tapir/simc"
