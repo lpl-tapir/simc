@@ -19,3 +19,8 @@ simc.zip
 # Packaging
 simc.egg-info/
 build/
+
+# DEM, nav, output directories
+dem/
+nav/
+output/

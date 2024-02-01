@@ -45,7 +45,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     ix = ix.astype(np.int32)
     iy = iy.astype(np.int32)
 
-    valid = np.ones(ix.shape).astype(np.bool)
+    valid = np.ones(ix.shape).astype(bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
     #print("demData {}".format(demData))
@@ -81,7 +81,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
             xords[valid], demz[valid], xordsQ, method="cubic"
         )
 
-        valid = np.ones(demz.shape).astype(np.bool)
+        valid = np.ones(demz.shape).astype(bool)
         valid[np.isnan(demz)] = 0
         demz[np.isnan(demz)] = 0
 
@@ -369,7 +369,7 @@ def genFacets(s, valid):
     # Col 11 holds whether the facet is left or right side left is 0, right is 1
     # Col 12 holds the cross-track index of the facet. This is for the echo power map
     f = np.zeros((nfacet, 12))
-    fkeep = np.ones(nfacet).astype(np.bool)
+    fkeep = np.ones(nfacet).astype(bool)
 
     # Ordering of points along axis 1 is important for cross product later
     # Ordering of points along axis 0 is important for left/right side
