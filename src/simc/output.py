@@ -17,11 +17,10 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     lr = fcalc[:, 2]
     pwr = fcalc[:, 0]
     twtt = fcalc[:, 1]
-    theta = fcalc[:,9]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
     cbin_copy = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
-  
+
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
     for j in oi:
@@ -52,51 +51,11 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap"][:, j] = np.bincount(
                 cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
             )
-            oDict["emap_angles"][:, j] = np.bincount(
-                cti, weights=theta, minlength=oDict["emap"].shape[0]
-            )
+
             frFacets = cti[cbin_copy == cbin_copy.min()]
-            #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
             frFacets = cti[cbin == cbin.min()]
             oDict["frmap"][frFacets, j] = 1
 
-        #oDict["pwr"][j,:] = fcalc[:,0]
-        #oDict["twtt"][j,:] = fcalc[:,1]
-        #oDict["theta"][j, :] = fcalc[:,9]
-        #oDict["phi"][j,:] = fcalc[:,10]
-        
-        '''
-        mlon, mlat, melev = pyproj.transform(
-            confDict["navigation"]["xyzsys"],
-            confDict["navigation"]["llesys"],
-            fcalc[:,5],
-            fcalc[:,6],
-            fcalc[:,7],
-        
-        )
-        print(mlat)
-        print(mlon)
-        print(melev)
-        oDict["mx"][j,:] = mlat
-        oDict["my"][j, :] = mlon
-        oDict["mz"][j,:] = melev
-        '''
-
-        ''' 
-        filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
-        print("saving {}...................".format(filename))
-        
-        np.savetxt(
-            confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
-            fcalc[:,[0,1,9,10]],
-            #fcalc[:,[0,1,2,8,9,10]],
-            delimiter=",",
-            header="power,twtt,theta,phi",
-            fmt="%.6e,%.6e,%.6f,%.6f",
-            comments="",
-        )
-        '''
-    
     return 0
 
 
@@ -112,16 +71,15 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         y = nav["y"].to_numpy()
         z = nav["z"].to_numpy()
 
-        gx, gy, gz = pyproj.transform(
-            confDict["navigation"]["xyzsys"], demCrs, x, y, z
-        )
+        xyz2dem = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], demCrs)
+        gx, gy, gz = xyz2dem.transform(x, y, z)
 
         gt = ~dem.window_transform(win)
         ix, iy = gt * (gx, gy)
         ix = ix.astype(np.int32)
         iy = iy.astype(np.int32)
 
-        nvalid = np.ones(ix.shape).astype(np.bool)
+        nvalid = np.ones(ix.shape).astype(bool)
         demz = np.zeros(ix.shape).astype(np.float32)
 
         # If dembump turned on, fix off dem values
@@ -139,15 +97,11 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         demz[nvalid] = demData[iy[nvalid], ix[nvalid]]
         nvalid[demz == dem.nodata] = 0
 
-        nx, ny, nz = pyproj.transform(
-            demCrs, confDict["navigation"]["xyzsys"], gx, gy, demz
-        )
+        dem2xyz = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["xyzsys"])
+        nx, ny, nz = dem2xyz.transform(gx, gy, demz)
 
-        ## CHECK THIS LINE              <------------------------------------------------------
-        nlon, nlat, nelev = pyproj.transform(
-            demCrs, confDict["navigation"]["llesys"], gx, gy, demz
-            #confDict["navigation"]["xyzsys"], demCrs, nx, ny, demz # from pds
-        )
+        dem2lle = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["llesys"])
+        nlon, nlat, nelev = dem2lle.transform(gx, gy, demz)
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
 
@@ -164,7 +118,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             nadInfo[:, 3] = nbin
             np.savetxt(
                 confDict["paths"]["outpath"] + "nadir.csv",
-               nadInfo,
+                nadInfo,
                 delimiter=",",
                 header="lat,lon,elev_IAU2000,sample",
                 fmt="%.6f,%.6f,%.3f,%d",
@@ -186,14 +140,9 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
-        flon, flat, felev = pyproj.transform(
-            confDict["navigation"]["xyzsys"],
-            #"+proj=longlat +R=3396190 +no_defs", #from pds
-            confDict["navigation"]["llesys"],
-            fret[:, 0],
-            fret[:, 1],
-            fret[:, 2],
-        )
+        xyz2lle = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"])
+        flon, flat, felev = xyz2lle.transform(fret[:, 0], fret[:, 1], fret[:, 2])
+
         if out["fret"]:
             fretInfo = np.zeros((nav.shape[0], 4))
             fretInfo[:, 0] = flat
@@ -208,36 +157,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
                 fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
-    '''
-    slon, slat, selev = pyproj.transform(
-        confDict["navigation"]["xyzsys"],
-        confDict["navigation"]["llesys"],
-        x,            
-        y,
-        z,
-    )
-    print(slat[0])
-    print(slon[0])
-    print(selev[0])
-    print(oDict["pwr"][0])
-    print(oDict["twtt"][0])
-    print(oDict["theta"][0])
-    print(oDict["phi"][0])
-    print(oDict["mx"][0])
-    print(oDict["my"][0])
-    print(oDict["mz"][0])
-    with h5py.File( confDict["paths"]["outpath"] + "out.h5", 'w' ) as hf:
-        hf.create_dataset("spacecraft_lat", data=slat, dtype=np.float32, compression="gzip")
-        hf.create_dataset("spacecraft_lon", data=slon, dtype=np.float32, compression="gzip")
-        hf.create_dataset("spacecraft_elev", data=selev, dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_pwr", data=oDict["pwr"], dtype=np.float64, compression="gzip")
-        hf.create_dataset("facets_twtt", data=oDict["twtt"], dtype=np.float64, compression="gzip")
-        hf.create_dataset("facets_theta", data=oDict["theta"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_phi", data=oDict["phi"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
-    '''
+
     if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
@@ -258,7 +178,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             frvalid[np.abs(fbin) >= confDict["simParams"]["tracesamples"]] = 0
             for i in range(len(fbin)):
                 b = fbin[i]
-                if not np.isnan(b) and abs(b) < confDict["simParams"]["tracesamples"] :
+                if not np.isnan(b) and abs(b) < confDict["simParams"]["tracesamples"]:
                     cstack[b, [i]] = frColor
 
         if out["shownadir"]:
@@ -317,7 +237,9 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         frgram = np.zeros((yDim, frmap.shape[1]))
 
         egram = skimage.transform.resize(emap, (yDim, emap.shape[1]))
-        egram_angles = skimage.transform.resize(emap_angles, (yDim, emap_angles.shape[1]))
+        egram_angles = skimage.transform.resize(
+            emap_angles, (yDim, emap_angles.shape[1])
+        )
         # Shrink emap and frmap
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
@@ -330,30 +252,11 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         egram = np.maximum(0, egram)
 
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
-        
-        '''
-        egram_color1 = np.copy(egram)
-        egram_color2 = np.copy(egram)
-        egram_color3 = np.copy(egram)
-        print(egram.shape)
-        print(egram_angles.shape)
-        x = (egram_angles / 3) % 2 < 1 
-        print(x.shape)
-        print(egram_angles)
-        angle = 5
-        shift = 2.5
-        egram_color1[(((egram_angles / 12) + shift)  / angle) % 2 < 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 < 1] * 0.7
-        #egram_color2[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.7
-        egram_color3 = egram  * 0.7#[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.6
-        estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
-        estack = np.dstack((egram, egram, egram)).astype(np.uint8)
-        '''
-        
+
         for i in range(egram.shape[1]):
             fri = frgram[:, i] > 0
             estack[fri, i] = frColor
             estack[estack.shape[0] // 2, i] = nColor
-
 
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")

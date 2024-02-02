@@ -30,18 +30,12 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
-   
     demCrs = dem.crs
-    try:
-        xform = pyproj.transformer.Transformer.from_crs(
-            confDict["navigation"]["xyzsys"], dem.crs
-        )
-    except:
-        print("reading dem crs failed, setting crs to xform manually")
-        demCrs = "+proj=longlat +R=3396190 +no_defs"
-        xform = pyproj.transformer.Transformer.from_crs(
-            confDict["navigation"]["xyzsys"], demCrs
-        )
+    print("demCrs", demCrs)
+
+    xform = pyproj.Transformer.from_crs(
+        confDict["navigation"]["xyzsys"], dem.crs
+    )
 
     print("-----------------------------------------------")
     print("xform {}".format(xform))
@@ -76,10 +70,10 @@ def main():
 
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))
-    
+
     for i in range(nav.shape[0]):
-        fcalc = sim.sim(confDict, dem, nav,  xform, demData, win, i)
-        #fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
+        fcalc = sim.sim(confDict, dem, nav, xform, demData, win, i)
+        # fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
         if fcalc.shape[0] == 0:
             continue
 

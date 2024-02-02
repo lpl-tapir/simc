@@ -36,9 +36,9 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     else:
         # Transform to dem CRS and sample DEM
         gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
-        print("gx: {}".format(gx))
-        print("gy: {}".format(gy))
-        print("gz: {}".format(gz))
+        # print("gx: {}".format(gx))
+        # print("gy: {}".format(gy))
+        # print("gz: {}".format(gz))
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -48,7 +48,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid = np.ones(ix.shape).astype(bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
-    #print("demData {}".format(demData))
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
@@ -100,55 +99,55 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
-    center_plane = None#get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
 
-    print("get_center_plane {}".format(center_plane))
     fcalc = calcFacetsFriis(
         facets,
         nav["x"][i],
         nav["y"][i],
         nav["z"][i],
         nav["uv"][i],
-        center_plane,
         confDict["simParams"]["speedlight"],
     )
 
     return fcalc
 
 
-
-'''
+"""
 Parameters
 ---------------
 rx: array of x components of the radii vector to the center of each facet
 ry: array of y components of the radii vector to the center of each facet
 rz: array of z components of the radii vector to the center of each facet
-'''
+"""
+
+
 def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
 
-    #calc lenght of both vectors
+    # calc lenght of both vectors
     mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
     mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
 
-    dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
-    return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
+    dot_product = (vx_p * vx_a) + (vy_p * vy_a) + (vz_p * vz_a)
+    return np.degrees(np.arccos(dot_product / (mag1 * mag2)))
+
 
 def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
     # obtaining the center of the plane from one of the corners of a facet in the center
     # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
-    
-    ctSteps = ctDist/ctStep
-    atSteps = atDist/atStep
-    #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
-    center_facet_index = int(ctSteps*atSteps+ctSteps-1)
-    print("center_facet_index {}".format(center_facet_index))
-    print(f[center_facet_index])
+
+    ctSteps = ctDist / ctStep
+    atSteps = atDist / atStep
+    # center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
+    center_facet_index = int(ctSteps * atSteps + ctSteps - 1)
+    # print("center_facet_index {}".format(center_facet_index))
+    # print(f[center_facet_index])
     cx = f[center_facet_index, 3]
     cy = f[center_facet_index, 4]
     cz = f[center_facet_index, 5]
     return [cx, cy, cz]
 
-def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
+
+def calcFacetsFriis(f, px, py, pz, ua, c):
     # Calculate return power and twtt for facets
     # Based on modified Friis transmission equation
     # explained in Choudhary, Holt, Kempf 2016
@@ -161,14 +160,12 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     # Col 5 is a flag for whether to use the facet
     # Cols 6-8 hold x,y,z for the facet center
     # Col 9 holds the facet's cross track index
-    # Col 10 holds the facet's angle of arrival
-    fcalc = np.zeros((f.shape[0], 11))
+    fcalc = np.zeros((f.shape[0], 9))
 
     # Calc midpoints
     mx = (f[:, 0] + f[:, 3] + f[:, 6]) / 3
     my = (f[:, 1] + f[:, 4] + f[:, 7]) / 3
     mz = (f[:, 2] + f[:, 5] + f[:, 8]) / 3
-
 
     # Calc distances to platform/twtt
     rx = px - mx
@@ -176,55 +173,7 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     rz = pz - mz
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
-    if center_plane != None:
-    
-        #print(r)
-        #print(np.min(r))       
-        #print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
-        #print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
-        #print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
-        # Calculate angles of return
-        theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
-        '''
-        # obtaining the center of the plane from one of the corners of a facet in the center
-        # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
-        center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
-        print("center_facet_index {}".format(center_facet_index))
-        print(f[center_facet_index])
-       '''
-        cmx = mx - center_plane[0]
-        cmy = my - center_plane[1]
-        cmz = mz - center_plane[2]
-
-        print("center plane {}".format(center_plane))
-        lon, lat, elev = pyproj.transform(
-            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-            center_plane[0],            
-            center_plane[1],
-            center_plane[2],
-        )
-        print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-        lon, lat, elev = pyproj.transform(
-            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-            px,            
-            py,
-            pz,            
-        )
-        print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-    
-        print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
-        print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
-        phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
-        phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
-        '''
-        print("ua {}".format(ua))
-        print(cx)
-        print(cy)
-        print(cz)
-        '''
     ## Calc area and normal vector
     # Calc 2->1 vector
     f[:, 3] = f[:, 0] - f[:, 3]  # x
@@ -251,14 +200,7 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     fcalc[:, 6] = my
     fcalc[:, 7] = mz
     fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
-    if center_plane != None:
-        fcalc[:, 9] = theta
-        fcalc[:, 10] = phi
-    '''
-    for i, p in enumerate(fcalc[:, 10]):
-        if p < 60  or p > 120:
-            print("i: {} phi:{} theta:{} side:{} power: {}  twtt:{}".format(i, fcalc[i,10], fcalc[i,9], fcalc[i,2], fcalc[i,0], fcalc[i,1] ))
-    '''
+
     return fcalc
 
 
@@ -357,7 +299,7 @@ def genFacets(s, valid):
     # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-    #print("gen facets {} {}".format(h,w))
+    # print("gen facets {} {}".format(h,w))
     nfacet = (w - 1) * (h - 1) * 2  # number of facets
     qt = int(nfacet / 4)  # quarter
     hf = int(nfacet / 2)  # half

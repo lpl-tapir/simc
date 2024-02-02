@@ -67,10 +67,12 @@ def prep(confDict, dem, nav):
         oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
 
     numFacets = int(
-        2 * ( 2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"] ) * ( 2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
+        2
+        * (2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"])
+        * (2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
     )
 
-    print("numFacets {}".format(numFacets))
+    # print("numFacets {}".format(numFacets))
     oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
@@ -113,15 +115,14 @@ def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
 
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 
-    demX, demY, demZ = pyproj.transform(
-        xyzsys, demCrs, corners[:, 0], corners[:, 1], corners[:, 2]
-    )
+    xform = pyproj.Transformer.from_crs(xyzsys, demCrs)
+    demX, demY, demZ = xform.transform(corners[:, 0], corners[:, 1], corners[:, 2])
     gt = ~dem.transform
-    print("gt {}".format(gt))
+    # print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
-    
-    print(bounds)
+
+    # print(bounds)
     with open(confDict["paths"]["logpath"], "a") as fd:
         if bounds[0] < 0:
             fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))

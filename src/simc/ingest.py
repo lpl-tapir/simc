@@ -83,7 +83,7 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
-    if confDict["paths"]["sigpath"].strip() not in (None, ''):
+    if confDict["paths"]["sigpath"].strip() not in (None, ""):
         confDict["simParams"]["coherent"] = True
     else:
         confDict["simParams"]["coherent"] = False
@@ -182,20 +182,30 @@ def readConfig(argDict):
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
 
-    # Determine internal xyz and spherical coordinate systems (IAU 2000)
+    # Load internal xyz and spherical coordinate systems (IAU 2015)
+    base = __file__.split("/")[:-1]
+    base = "/".join(base)
     xyzD = {
-        "mars": "+proj=geocent +R=3396190 +no_defs",
-        #"mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs",
-        "moon": "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-        "earth": "+proj=geocent +a=6378140 +b=6356750 +no_defs",
+        "mars": base + "/crs/mars2015_cartesian.wkt2",
+        "moon": base + "/crs/moon2015_cartesian.wkt2",
+        "earth": base + "/crs/earth2015_cartesian.wkt2",
     }
 
     lleD = {
-        "mars": "+proj=longlat +R=3396190 +no_defs",
-        #"mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs",
-        "moon": "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        "earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
+        "mars": base + "/crs/mars2015_planetocentric.wkt2",
+        "moon": base + "/crs/moon2015_planetocentric.wkt2",
+        "earth": base + "/crs/earth2015_planetocentric.wkt2",
     }
+
+    for k, v in xyzD.items():
+        fd = open(v, mode="r")
+        xyzD[k] = fd.read()
+        fd.close()
+
+    for k, v in lleD.items():
+        fd = open(v, mode="r")
+        lleD[k] = fd.read()
+        fd.close()
 
     body = confDict["simParams"]["body"]
 
