@@ -26,8 +26,14 @@ dependencies = [
     "h5py",
     "scikit-image",
     "geopandas",
-    "tqdm"
+    "tqdm",
+    "matplotlib",
+    "requests"
 ]
 
 [project.urls]
 repository = "https://github.com/lpl-tapir/simc"
+
+[project.scripts]
+simc = "simc.main:main"
+simc-fetch-marsis = "simc.fetch.marsis_fetch:main"

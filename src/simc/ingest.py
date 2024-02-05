@@ -5,7 +5,8 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-import parseNav
+
+import simc.parseNav
 
 
 def parseCmd():
@@ -231,5 +232,5 @@ def readConfig(argDict):
 
 def readNav(navPath, navSys, xyzSys, navFunc):
     # Call the user specified navigation file parser
-    nav = eval("parseNav." + navFunc)(navPath, navSys, xyzSys)
+    nav = eval("simc.parseNav." + navFunc)(navPath, navSys, xyzSys)
     return nav

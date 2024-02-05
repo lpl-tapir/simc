@@ -9,20 +9,20 @@ import pyproj
 import rasterio as rio
 import tqdm
 
-import ingest
-import output
-import prep
-import sim
+import simc.ingest
+import simc.output
+import simc.prep
+import simc.sim
 
 
 def main():
     startTime = time.time()
     version = 1.1
-    argDict = ingest.parseCmd()
-    confDict = ingest.readConfig(argDict)
+    argDict = simc.ingest.parseCmd()
+    confDict = simc.ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
 
-    nav = ingest.readNav(
+    nav = simc.ingest.readNav(
         confDict["paths"]["navpath"],
         confDict["navigation"]["navsys"],
         confDict["navigation"]["xyzsys"],
@@ -37,9 +37,9 @@ def main():
 
     xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], dem.crs)
 
-    nav, oDict, inv = prep.prep(confDict, dem, nav)
+    nav, oDict, inv = simc.prep.prep(confDict, dem, nav)
 
-    bounds = prep.calcBounds(
+    bounds = simc.prep.calcBounds(
         confDict,
         dem,
         dem.crs,
@@ -65,17 +65,16 @@ def main():
         fd.write("Simulating %d traces\n" % len(nav))
 
     for i in tqdm.tqdm(range(nav.shape[0]), disable=(not argDict["p"])):
-        fcalc = sim.sim(confDict, dem, nav, xform, demData, win, i)
-        # fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
+        fcalc = simc.sim.sim(confDict, dem, nav, xform, demData, win, i)
         if fcalc.shape[0] == 0:
             continue
 
         # Putting things back in order
         oi = np.where(inv == i)[0]
-        output.build(confDict, oDict, fcalc, nav, i, oi)
+        simc.output.build(confDict, oDict, fcalc, nav, i, oi)
 
     nav = nav.iloc[inv, :].reset_index()
-    output.save(confDict, oDict, nav, dem, demData, dem.crs, win)
+    simc.output.save(confDict, oDict, nav, dem, demData, dem.crs, win)
     dem.close()
 
     stopTime = time.time()
@@ -83,6 +82,5 @@ def main():
         fd.write("Wall clock runtime: %.2fs" % (stopTime - startTime))
 
 
-# execute only if run as a script.
 if __name__ == "__main__":
     main()

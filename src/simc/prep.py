@@ -2,7 +2,8 @@ import sys
 
 import numpy as np
 import pyproj
-import sim
+
+import simc.sim
 
 
 def findDupe(nav):
@@ -112,7 +113,7 @@ def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
     corners = np.zeros((len(nav) * 9, 3))
 
     for i in range(len(nav)):
-        gx, gy, gz = sim.genGrid(nav, 1, 1, atDist, ctDist, i)
+        gx, gy, gz = simc.sim.genGrid(nav, 1, 1, atDist, ctDist, i)
 
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 

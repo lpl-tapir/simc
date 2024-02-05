@@ -9,6 +9,7 @@ def cli():
                         prog='marsis_fetch.py',
                         description='Download MARSIS SS3 geometry file')
     parser.add_argument('observation', type=int, help="Observation ID number (example: 8700)")
+    parser.add_argument("--output", "-o", type=str, default=".", help="Output directory (default = .)")
     return parser.parse_args()
 
 
@@ -41,13 +42,15 @@ def main():
 
     url += "data/edr%04dx/e_%05d_ss3_trk_cmp_m_g.dat" % (int(track / 10), track)
 
-    os.system("mkdir -p ../nav")
+    os.system("mkdir -p " + args.output)
 
     r = requests.get(url, allow_redirects=True)
     if r.status_code == 404:
         print("No nav file found for MARSIS track %05d" % track)
         exit()
-    with open("../nav/e_%05d_ss3_trk_cmp_m_g.dat" % track, "wb") as fd:
+    with open(args.output + "/e_%05d_ss3_trk_cmp_m_g.dat" % track, "wb") as fd:
         fd.write(r.content)
 
-main()
+
+if __name__ == "__main__":
+    main()

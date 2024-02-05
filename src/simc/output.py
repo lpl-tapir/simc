@@ -1,12 +1,13 @@
 import sys
 
-import curve
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import pyproj
 import skimage.transform
 from PIL import Image
+
+import simc.curve
 
 
 def build(confDict, oDict, fcalc, nav, i, oi):
@@ -171,7 +172,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
         # Auto adjustment
-        scaling = np.array(curve.curve)
+        scaling = np.array(simc.curve.curve)
         cgram = scaling[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
