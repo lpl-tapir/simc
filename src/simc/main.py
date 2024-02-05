@@ -1,12 +1,18 @@
+import pprint
 import sys
-import ingest, prep, sim, output
-import rasterio as rio
+import time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pprint
 import pyproj
-import time
-import matplotlib.pyplot as plt
+import rasterio as rio
+import tqdm
+
+import ingest
+import output
+import prep
+import sim
 
 
 def main():
@@ -15,7 +21,6 @@ def main():
     argDict = ingest.parseCmd()
     confDict = ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
-    print("dem {}".format(dem.crs))
 
     nav = ingest.readNav(
         confDict["paths"]["navpath"],
@@ -30,31 +35,20 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
-    demCrs = dem.crs
-    print("demCrs", demCrs)
-
-    xform = pyproj.Transformer.from_crs(
-        confDict["navigation"]["xyzsys"], dem.crs
-    )
-
-    print("-----------------------------------------------")
-    print("xform {}".format(xform))
-    print(confDict["navigation"]["xyzsys"])
-    print("-----------------------------------------------")
+    xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], dem.crs)
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
 
     bounds = prep.calcBounds(
         confDict,
         dem,
-        demCrs,
+        dem.crs,
         nav,
         confDict["navigation"]["xyzsys"],
         confDict["facetParams"]["atdist"],
         confDict["facetParams"]["ctdist"],
     )
 
-    print("bounds {}".format(bounds))
     rowSub = (bounds[2], bounds[3] + 1)
     colSub = (bounds[0], bounds[1] + 1)
 
@@ -65,13 +59,12 @@ def main():
         )
 
     win = rio.windows.Window.from_slices(rowSub, colSub)
-    print("win {}".format(win))
     demData = dem.read(1, window=win)
 
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))
 
-    for i in range(nav.shape[0]):
+    for i in tqdm.tqdm(range(nav.shape[0]), disable=(not argDict["p"])):
         fcalc = sim.sim(confDict, dem, nav, xform, demData, win, i)
         # fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
         if fcalc.shape[0] == 0:
@@ -82,7 +75,7 @@ def main():
         output.build(confDict, oDict, fcalc, nav, i, oi)
 
     nav = nav.iloc[inv, :].reset_index()
-    output.save(confDict, oDict, nav, dem, demData, demCrs, win)
+    output.save(confDict, oDict, nav, dem, demData, dem.crs, win)
     dem.close()
 
     stopTime = time.time()

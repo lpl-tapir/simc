@@ -1,11 +1,12 @@
-import numpy as np
 import sys
-from PIL import Image
-import pyproj
-import matplotlib.pyplot as plt
-import skimage.transform
+
 import curve
 import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import pyproj
+import skimage.transform
+from PIL import Image
 
 
 def build(confDict, oDict, fcalc, nav, i, oi):
@@ -140,7 +141,9 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
-        xyz2lle = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"])
+        xyz2lle = pyproj.Transformer.from_crs(
+            confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"]
+        )
         flon, flat, felev = xyz2lle.transform(fret[:, 0], fret[:, 1], fret[:, 2])
 
         if out["fret"]:
@@ -227,7 +230,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
         yDim = np.floor(emap.shape[0] * ySquish).astype(np.int32) + 1
-        print(yDim)
+
         idx = np.arange(0, emap.shape[0])
         nidx = np.floor(idx * ySquish).astype(np.int32)
         egram = np.zeros((yDim, emap.shape[1]))

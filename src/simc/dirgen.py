@@ -1,4 +1,6 @@
-import sys, os, glob
+import glob
+import os
+import sys
 
 dir = sys.argv[1]
 

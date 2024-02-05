@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# First arg is a USRDR SHARAD observation ID in the format s_00168901
+# First and only arg is a USRDR SHARAD observation ID in the format s_00168901
 
 mkdir -p ../nav
 

@@ -1,10 +1,12 @@
 import sys
-import pandas as pd
+
 import geopandas as gpd
-import rasterio as rio
-import numpy as np
-import pyproj, h5py
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyproj
+import rasterio as rio
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -190,7 +192,7 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
     )
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
-    df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)
+    df["datum"] = (1e3 * (df["elev"] - df["marsRad"]) * 2.0 / c) - (1800.0 * 37.5e-9)
 
     return df[["x", "y", "z", "datum"]]
 

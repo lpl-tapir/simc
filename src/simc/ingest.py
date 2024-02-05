@@ -1,7 +1,11 @@
-import argparse, configparser, os, sys
+import argparse
+import configparser
+import os
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import parseNav
-import matplotlib.pyplot as plt
 
 
 def parseCmd():
@@ -23,11 +27,13 @@ def parseCmd():
         dest="outPath",
         help="Path to output products - overrides any path in config file",
     )
+    parser.add_argument("-p", action="store_true", help="Display progress bar")
     args = parser.parse_args()
 
     # Store in dict, expand any relative paths
     argDict = {}
     argDict["confPath"] = os.path.abspath(args.confPath)
+    argDict["p"] = args.p
 
     if args.navPath is not None:
         argDict["navPath"] = os.path.abspath(args.navPath)
@@ -92,8 +98,7 @@ def readConfig(argDict):
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
         sys.exit(1)
-    print(confDict)
-    print("#################################################")
+
     if not os.path.exists(confDict["paths"]["dempath"]):
         print("Invalid path to DEM file - file does not exist.")
         sys.exit(1)
