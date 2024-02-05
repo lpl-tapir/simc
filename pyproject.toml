@@ -25,7 +25,8 @@ dependencies = [
     "pyproj",
     "h5py",
     "scikit-image",
-    "geopandas"
+    "geopandas",
+    "tqdm"
 ]
 
 [project.urls]
