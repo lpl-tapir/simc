@@ -21,8 +21,11 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     twtt = fcalc[:, 1]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
-    cbin_copy = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
 
+    # Get rid of data that is after end of trace
+    pwr[cbin >= confDict["simParams"]["tracesamples"]] = 0
+
+    # Modulo enforces sharad FPB matching behavior. Should probably do this in a better way
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
     for j in oi:
@@ -54,8 +57,11 @@ def build(confDict, oDict, fcalc, nav, i, oi):
                 cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
             )
 
-            frFacets = cti[cbin_copy == cbin_copy.min()]
-            frFacets = cti[cbin == cbin.min()]
+            # Mask out no-power bins
+            cbin_mask = cbin[:].astype(np.float32)
+            cbin_mask[pwr == 0] = np.nan
+
+            frFacets = cti[cbin_mask == np.nanmin(cbin_mask)]
             oDict["frmap"][frFacets, j] = 1
 
     return 0
@@ -241,9 +247,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         frgram = np.zeros((yDim, frmap.shape[1]))
 
         egram = skimage.transform.resize(emap, (yDim, emap.shape[1]))
-        egram_angles = skimage.transform.resize(
-            emap_angles, (yDim, emap_angles.shape[1])
-        )
+
         # Shrink emap and frmap
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
