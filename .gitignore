@@ -12,3 +12,6 @@ batch/jobs/
 
 # Release
 simc.zip
+
+#Example files
+*.sh

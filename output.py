@@ -55,48 +55,35 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap_angles"][:, j] = np.bincount(
                 cti, weights=theta, minlength=oDict["emap"].shape[0]
             )
-            frFacets = cti[cbin_copy == cbin_copy.min()]
+            frFacets = cti[cbin_copy == cbin_copy.min()] #comparison of floats
             #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
-            frFacets = cti[cbin == cbin.min()]
+            #frFacets = cti[cbin == cbin.min()] #comparison of integers
             oDict["frmap"][frFacets, j] = 1
 
-        #oDict["pwr"][j,:] = fcalc[:,0]
-        #oDict["twtt"][j,:] = fcalc[:,1]
-        #oDict["theta"][j, :] = fcalc[:,9]
-        #oDict["phi"][j,:] = fcalc[:,10]
+        if out["exportfacetsarray"]:
+            mlon, mlat, melev = pyproj.transform(
+                confDict["navigation"]["xyzsys"],
+                confDict["navigation"]["llesys"],
+                fcalc[:,5],
+                fcalc[:,6],
+                fcalc[:,7],
         
-        '''
-        mlon, mlat, melev = pyproj.transform(
-            confDict["navigation"]["xyzsys"],
-            confDict["navigation"]["llesys"],
-            fcalc[:,5],
-            fcalc[:,6],
-            fcalc[:,7],
-        
-        )
-        print(mlat)
-        print(mlon)
-        print(melev)
-        oDict["mx"][j,:] = mlat
-        oDict["my"][j, :] = mlon
-        oDict["mz"][j,:] = melev
-        '''
+            )
+            fcalc[:,5] =  mlon
+            fcalc[:,6] =  mlat
+            fcalc[:,7] =  melev
 
-        ''' 
-        filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
-        print("saving {}...................".format(filename))
-        
-        np.savetxt(
-            confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
-            fcalc[:,[0,1,9,10]],
-            #fcalc[:,[0,1,2,8,9,10]],
-            delimiter=",",
-            header="power,twtt,theta,phi",
-            fmt="%.6e,%.6e,%.6f,%.6f",
-            comments="",
-        )
-        '''
-    
+            filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
+            print("saving {}...................".format(filename))
+            np.savetxt(
+                confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
+                #fcalc[np.where(fcalc[:,0] != sys.float_info.min)[0],[0,1,9,10,5,6,7]], # TODO: export only values part of the antenna model
+                fcalc[:,[0,1,9,10,5,6,7]],
+                delimiter=",",
+                header="power,twtt,theta,phi,mx,my,mz",
+                fmt="%.6e,%.6e,%.6f,%6f,%.6f,%.6f,%.6f",
+                comments="",
+            )
     return 0
 
 
@@ -187,8 +174,10 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ).astype(np.int32)
 
         flon, flat, felev = pyproj.transform(
-            confDict["navigation"]["xyzsys"],
+            #commenting out this lines that were working for CTX
+            #demCrs,
             #"+proj=longlat +R=3396190 +no_defs", #from pds
+            confDict["navigation"]["xyzsys"],
             confDict["navigation"]["llesys"],
             fret[:, 0],
             fret[:, 1],
@@ -208,36 +197,27 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
                 fmt="%.6f,%.6f,%.3f,%d",
                 comments="",
             )
-    '''
-    slon, slat, selev = pyproj.transform(
-        confDict["navigation"]["xyzsys"],
-        confDict["navigation"]["llesys"],
-        x,            
-        y,
-        z,
-    )
-    print(slat[0])
-    print(slon[0])
-    print(selev[0])
-    print(oDict["pwr"][0])
-    print(oDict["twtt"][0])
-    print(oDict["theta"][0])
-    print(oDict["phi"][0])
-    print(oDict["mx"][0])
-    print(oDict["my"][0])
-    print(oDict["mz"][0])
-    with h5py.File( confDict["paths"]["outpath"] + "out.h5", 'w' ) as hf:
-        hf.create_dataset("spacecraft_lat", data=slat, dtype=np.float32, compression="gzip")
-        hf.create_dataset("spacecraft_lon", data=slon, dtype=np.float32, compression="gzip")
-        hf.create_dataset("spacecraft_elev", data=selev, dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_pwr", data=oDict["pwr"], dtype=np.float64, compression="gzip")
-        hf.create_dataset("facets_twtt", data=oDict["twtt"], dtype=np.float64, compression="gzip")
-        hf.create_dataset("facets_theta", data=oDict["theta"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_phi", data=oDict["phi"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
-        hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
-    '''
+
+    if out["exportfacetsarrayh5"]:
+        slon, slat, selev = pyproj.transform(
+            confDict["navigation"]["xyzsys"],
+            confDict["navigation"]["llesys"],
+            x,
+            y,
+            z,
+            )
+        with h5py.File( confDict["paths"]["outpath"] + "out.h5", 'w' ) as hf:
+            hf.create_dataset("spacecraft_lat", data=slat, dtype=np.float32, compression="gzip")
+            hf.create_dataset("spacecraft_lon", data=slon, dtype=np.float32, compression="gzip")
+            hf.create_dataset("spacecraft_elev", data=selev, dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_pwr", data=oDict["pwr"], dtype=np.float64, compression="gzip")
+            hf.create_dataset("facets_twtt", data=oDict["twtt"], dtype=np.float64, compression="gzip")
+            hf.create_dataset("facets_theta", data=oDict["theta"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_phi", data=oDict["phi"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
+
     if out["combined"] or out["binary"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
@@ -247,6 +227,14 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
+
+        #The following lines are needed to align the clutter sim with the drone GPR first return
+        #TODO: move this parameter to a config file
+        '''
+        for i in range(cgram.shape[1]):
+            print(i)
+            cgram[:, i] = np.roll(cgram[:,i], 35)
+        '''
         # Auto adjustment
         scaling = np.array(curve.curve)
         cgram = scaling[cgram] * 255
@@ -322,10 +310,15 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
 
+        #The following to lines are needed to handle the values outside the dipole pattern of the drone GPR
+        egram[egram == 0] = np.nan
         nz = egram != 0
         hclip = 1.5
-        egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
-        egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
+        #egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
+        #egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
+        #The following to lines are needed to handle the values outside the dipole pattern of the drone GPR
+        egram[nz] = egram[nz] - (np.nanmean(egram[nz]) - hclip * np.nanstd(egram[nz]))
+        egram = egram * (255.0 / (np.nanmean(egram[nz]) + hclip * np.nanstd(egram[nz])))
         egram = np.minimum(egram, 255)
         egram = np.maximum(0, egram)
 

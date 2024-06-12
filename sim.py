@@ -100,9 +100,11 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
-    center_plane = None#get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
+    
+    center_plane = None  
+    if confDict["simParams"]["centerplane"]:
+        center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
 
-    print("get_center_plane {}".format(center_plane))
     fcalc = calcFacetsFriis(
         facets,
         nav["x"][i],
@@ -141,8 +143,8 @@ def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
     atSteps = atDist/atStep
     #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
     center_facet_index = int(ctSteps*atSteps+ctSteps-1)
-    print("center_facet_index {}".format(center_facet_index))
-    print(f[center_facet_index])
+    #print("center_facet_index {}".format(center_facet_index))
+    #print(f[center_facet_index])
     cx = f[center_facet_index, 3]
     cy = f[center_facet_index, 4]
     cz = f[center_facet_index, 5]
@@ -177,12 +179,6 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
     if center_plane != None:
-    
-        #print(r)
-        #print(np.min(r))       
-        #print(np.where(np.bitwise_and(f[:,1] == 0, f[:,2] == 0)))
-        #print(np.where(np.bitwise_and(f[:,4] == 0, f[:,5] == 0)))
-        #print(np.where(np.bitwise_and(f[:,7] == 0, f[:,8] == 0)))
         # Calculate angles of return
         theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
@@ -196,27 +192,28 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
         cmx = mx - center_plane[0]
         cmy = my - center_plane[1]
         cmz = mz - center_plane[2]
-
+        # The following lines are just to print the fret and nadir coordinates in a specific CRS
+        '''
         print("center plane {}".format(center_plane))
         lon, lat, elev = pyproj.transform(
-            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+            "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
+            "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
             center_plane[0],            
             center_plane[1],
             center_plane[2],
         )
         print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
         lon, lat, elev = pyproj.transform(
-            "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +a=1737400 +b=1737400 +no_defs",
+            "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
+            "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
             px,            
             py,
             pz,            
         )
         print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-    
         print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
         print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
+        '''
         phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
         phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
         '''
@@ -244,6 +241,14 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     ct = ct / (r * area * 2)
 
     fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+
+    # Using the equation for the dipole pattern and setting the values falling outside this shape to the min float value. 
+    #Also, clipping the max value so that not only the surface is visible
+    '''
+    fcalc[:, 0] = np.where(np.bitwise_or(r <= 100  * np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)), r <= 100  * np.cos(np.pi/2*np.cos(np.radians(-phi)))/np.sin(np.radians(-phi))), fcalc[:,0], sys.float_info.min)
+    fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.7))
+    '''
+
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
@@ -254,11 +259,6 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     if center_plane != None:
         fcalc[:, 9] = theta
         fcalc[:, 10] = phi
-    '''
-    for i, p in enumerate(fcalc[:, 10]):
-        if p < 60  or p > 120:
-            print("i: {} phi:{} theta:{} side:{} power: {}  twtt:{}".format(i, fcalc[i,10], fcalc[i,9], fcalc[i,2], fcalc[i,0], fcalc[i,1] ))
-    '''
     return fcalc
 
 
@@ -288,7 +288,6 @@ def genGrid(nav, ctNum, atNum, atStep, ctStep, i):
     px = nav["x"][i]
     py = nav["y"][i]
     pz = nav["z"][i]
-
     gx = dx + px
     gy = dy + py
     gz = dz + pz

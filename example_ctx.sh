@@ -25,5 +25,10 @@
 #python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0091XX/S_00915701_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
 #python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0095XX/S_00951301_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
 #python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0106XX/S_01061401_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
-python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0125XX/S_01252601_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
+#python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0125XX/S_01252601_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
 #python main.py ./config/sharad_ctx.ini -n /zippy/MARS/orig/supl/SHARAD/PDS_v2/DATA/GEOM/S_0125XX/S_01255901_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_r12/blended_r12-tile-0.tif
+python main.py ./config/sharad_ctx.ini -n /zippy/MARS/targ/modl/MRO/CTX_DEM/GEOM_LDA/S_06802001_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_PH_4stereo_r6/blended_PH_4stereo_r6-tile-0.tif
+#python main.py ./config/sharad_ctx.ini -n /zippy/MARS/targ/modl/MRO/CTX_DEM/GEOM_LDA/S_00691803_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_DM_r12/blended_DM_r12-tile-0.tif 
+#python main.py ./config/sharad_ctx.ini -n /zippy/MARS/targ/modl/MRO/CTX_DEM/GEOM_LDA/S_06118001_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_DM_r12/blended_DM_r12-tile-0.tif 
+#python main.py ./config/sharad_ctx.ini -n /zippy/MARS/targ/modl/MRO/CTX_DEM/GEOM_LDA/S_02295201_GEOM.TAB  -d /zippy/MARS/targ/modl/MRO/CTX_DEM/blended_DM_r12/blended_DM_r12-tile-0.tif 
+

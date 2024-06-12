@@ -160,7 +160,7 @@ def readConfig(argDict):
         print("Invalid value for simParams:deminterp")
         print('Must be "True" or "False"')
         sys.exit(1)
-
+    #'''
     # Check that facet extent and dimensions are legal
     if confDict["facetParams"]["atdist"] < confDict["facetParams"]["atstep"]:
         print("Invalid config file param.")
@@ -181,7 +181,7 @@ def readConfig(argDict):
         print("Invalid config file param")
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
-
+    #'''
     # Determine internal xyz and spherical coordinate systems (IAU 2000)
     xyzD = {
         "mars": "+proj=geocent +R=3396190 +no_defs",
@@ -194,7 +194,8 @@ def readConfig(argDict):
         "mars": "+proj=longlat +R=3396190 +no_defs",
         #"mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs",
         "moon": "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        "earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
+        #"earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
+        "earth": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
     }
 
     body = confDict["simParams"]["body"]

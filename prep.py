@@ -71,7 +71,7 @@ def prep(confDict, dem, nav):
     )
 
     print("numFacets {}".format(numFacets))
-    oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
+    oDict["pwr"] = np.array([])#np.zeros((traces, numFacets)).astype(np.float64)
     oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
     oDict["phi"] = np.zeros((traces, numFacets)).astype(np.float32)

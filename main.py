@@ -15,7 +15,7 @@ def main():
     argDict = ingest.parseCmd()
     confDict = ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
-    print("dem {}".format(dem.crs))
+    print("dem crs{}".format(dem.crs))
 
     nav = ingest.readNav(
         confDict["paths"]["navpath"],
@@ -31,22 +31,19 @@ def main():
         pprint.pprint(confDict, stream=fd)
 
    
-    demCrs = dem.crs
+    #demCrs = dem.crs
+    #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
+    demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+    #demCrs = "+proj=longlat +R=3396190 +no_defs"
     try:
-        xform = pyproj.transformer.Transformer.from_crs(
-            confDict["navigation"]["xyzsys"], dem.crs
-        )
-    except:
-        print("reading dem crs failed, setting crs to xform manually")
-        demCrs = "+proj=longlat +R=3396190 +no_defs"
         xform = pyproj.transformer.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], demCrs
         )
-
-    print("-----------------------------------------------")
-    print("xform {}".format(xform))
-    print(confDict["navigation"]["xyzsys"])
-    print("-----------------------------------------------")
+    except:
+        print("reading dem crs failed, setting crs to xform manually")
+        xform = pyproj.transformer.Transformer.from_crs(
+            confDict["navigation"]["xyzsys"], demCrs
+        )
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
 

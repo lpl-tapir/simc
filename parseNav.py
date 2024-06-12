@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 # time shift in seconds
 
 #areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
-areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+areoidPath = "../dem/mega_128ppd.tif"
+#areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
 
 def GetNav_MARSIS(navfile, navsys, xyzsys):
     c = 299792458
@@ -93,11 +94,8 @@ def GetNav_akHypo(navfile, navsys, xyzsys):
 
 
 def GetNav_DJI(navfile, navsys, xyzsys):
-
     df = pd.read_csv(navfile, sep=",")
-
-    print(df)
-    c = 299792458
+    df["lon"] = df["lon"]+360 # this is needed to handle the CRS when the points are exported from QGIS
     df["x"], df["y"], df["z"] = pyproj.transform(
         navsys,
         xyzsys,
@@ -106,8 +104,6 @@ def GetNav_DJI(navfile, navsys, xyzsys):
         df["hgt"].to_numpy(),
     )
     df["datum"] = 0 * df["x"]
-    traceSamples = 1000
-    #df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
     return df[["x", "y", "z", "datum"]]
 
 
