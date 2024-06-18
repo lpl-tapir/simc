@@ -31,9 +31,9 @@ def main():
         pprint.pprint(confDict, stream=fd)
 
    
-    #demCrs = dem.crs
+    demCrs = dem.crs
     #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
-    demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+    #demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
     #demCrs = "+proj=longlat +R=3396190 +no_defs"
     try:
         xform = pyproj.transformer.Transformer.from_crs(

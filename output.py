@@ -20,7 +20,8 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     theta = fcalc[:,9]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
-    cbin_copy = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
+    cbin_float = (twttAdj / confDict["simParams"]["dt"]).astype(np.float32)
+    angle = 5
   
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
@@ -28,6 +29,12 @@ def build(confDict, oDict, fcalc, nav, i, oi):
         if out["combined"] or out["combinedadj"] or out["binary"]:
             oDict["combined"][:, j] = np.bincount(
                 cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
+            )
+            oDict["combined_center"][:, j] = np.bincount(
+                cbin, weights=pwr*(theta <= (angle/2)), minlength=confDict["simParams"]["tracesamples"]
+            )
+            oDict["combined_sides"][:, j] = np.bincount(
+                cbin, weights=pwr*(theta > (angle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
 
         if out["left"]:
@@ -55,10 +62,12 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap_angles"][:, j] = np.bincount(
                 cti, weights=theta, minlength=oDict["emap"].shape[0]
             )
-            frFacets = cti[cbin_copy == cbin_copy.min()] #comparison of floats
+            frFacets = cti[cbin_float == cbin_float.min()] #comparison of floats
             #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
             #frFacets = cti[cbin == cbin.min()] #comparison of integers
             oDict["frmap"][frFacets, j] = 1
+            for k in range(-9, 10):
+                oDict["frmap"][frFacets+k, j] = 1
 
         if out["exportfacetsarray"]:
             mlon, mlat, melev = pyproj.transform(
@@ -240,6 +249,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         cgram = scaling[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
+        
         # Add in first return and nadir locations if requested
         if out["showfret"]:
             frvalid = nvalid[:]
@@ -257,6 +267,15 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         cimg = Image.fromarray(cstack)
         cimg = cimg.convert("RGB")
         cimg.save(confDict["paths"]["outpath"] + "combinedAdj.png")
+
+        if out["combinedcolored"]:
+            cgram_center = cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_sides"] == oDict["combined"])
+            cgram_center[cgram != cgram_center] = cgram[cgram != cgram_center] * 0.4
+            cstack = np.dstack((cgram_center, cgram, cgram_center)).astype("uint8")
+        
+            cimg = Image.fromarray(cstack)
+            cimg = cimg.convert("RGB")
+            cimg.save(confDict["paths"]["outpath"] + "combinedColored.png")
 
     if out["left"]:
         cgram = oDict["left"] * (255.0 / oDict["left"].max())
@@ -279,8 +298,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     if out["echomap"]:
         egram = oDict["emap"] * (255.0 / oDict["emap"].max())
-        egram_color = np.copy(egram)
-
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
@@ -310,19 +327,28 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
 
-        #The following to lines are needed to handle the values outside the dipole pattern of the drone GPR
-        egram[egram == 0] = np.nan
+        #The following line is needed to handle the values outside the dipole pattern of the drone GPR
+        #egram[egram == 0] = np.nan
         nz = egram != 0
         hclip = 1.5
-        #egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
-        #egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
-        #The following to lines are needed to handle the values outside the dipole pattern of the drone GPR
-        egram[nz] = egram[nz] - (np.nanmean(egram[nz]) - hclip * np.nanstd(egram[nz]))
-        egram = egram * (255.0 / (np.nanmean(egram[nz]) + hclip * np.nanstd(egram[nz])))
+        egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
+        egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
+        #The following two lines are needed to handle the values outside the dipole pattern of the drone GPR
+        #egram[nz] = egram[nz] - (np.nanmean(egram[nz]) - hclip * np.nanstd(egram[nz]))
+        #egram = egram * (255.0 / (np.nanmean(egram[nz]) + hclip * np.nanstd(egram[nz])))
         egram = np.minimum(egram, 255)
         egram = np.maximum(0, egram)
 
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+        for i in range(egram.shape[1]):
+            fri = frgram[:, i] > 0
+            estack[fri, i] = frColor
+            estack[estack.shape[0] // 2, i] = nColor
+
+
+        eimg = Image.fromarray(estack)
+        eimg = eimg.convert("RGB")
+        eimg.save(confDict["paths"]["outpath"] + "echomapAdj.png")
         
         '''
         egram_color1 = np.copy(egram)
@@ -341,13 +367,31 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
         '''
+        if out["echomapcolored"]:
+            angle = 5
+            shift = angle/2
+            nColor = [0, 255, 0]
+            facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4 # print(egram_angles/12)
+            print(egram_angles.shape)
+            print(emap_angles.shape)
+            print(confDict["facetParams"]["atdist"])
+            print(confDict["facetParams"]["atstep"])
+            print(facets_per_bin)
+            egram_color1 = np.copy(egram)
+            egram_color1[(((egram_angles / facets_per_bin) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / facets_per_bin) + shift)  / angle) % 2 >= 1] * 0.7
+            egram_color2 = np.copy(egram)
+            egram_color2[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
+            egram_color3 = egram  * 0.7
+            egram_color3[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
+            estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
+         
+            for i in range(egram.shape[1]):
+                fri = frgram[:, i] > 0
+                estack[fri, i] = frColor
+                for k in range(-1, 2):
+                    estack[estack.shape[0] // 2+k, i] = nColor
+
+            eimg = Image.fromarray(estack)
+            eimg = eimg.convert("RGB")
+            eimg.save(confDict["paths"]["outpath"] + "echomapColored.png")
         
-        for i in range(egram.shape[1]):
-            fri = frgram[:, i] > 0
-            estack[fri, i] = frColor
-            estack[estack.shape[0] // 2, i] = nColor
-
-
-        eimg = Image.fromarray(estack)
-        eimg = eimg.convert("RGB")
-        eimg.save(confDict["paths"]["outpath"] + "echomapAdj.png")

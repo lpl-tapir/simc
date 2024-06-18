@@ -244,12 +244,12 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
 
     # Using the equation for the dipole pattern and setting the values falling outside this shape to the min float value. 
     #Also, clipping the max value so that not only the surface is visible
-    '''
-    fcalc[:, 0] = np.where(np.bitwise_or(r <= 100  * np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)), r <= 100  * np.cos(np.pi/2*np.cos(np.radians(-phi)))/np.sin(np.radians(-phi))), fcalc[:,0], sys.float_info.min)
-    fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.7))
-    '''
+    #fcalc[:, 0] = np.where(np.bitwise_or(r <= 100  * np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)), r <= 100  * np.cos(np.pi/2*np.cos(np.radians(-phi)))/np.sin(np.radians(-phi))), fcalc[:,0], sys.float_info.min)
+    #fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.7))
 
     fcalc[:, 1] = 2 * r / c  # twtt
+    print("    r min {}, max {}".format(np.min(r), np.max(r)))
+    print("theta min {}, max {}".format(np.min(theta), np.max(theta)))
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
     fcalc[:, 5] = mx  # Facet centers

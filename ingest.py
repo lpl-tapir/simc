@@ -188,14 +188,18 @@ def readConfig(argDict):
         #"mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs",
         "moon": "+proj=geocent +a=1737400 +b=1737400 +no_defs",
         "earth": "+proj=geocent +a=6378140 +b=6356750 +no_defs",
+        "ceres": "+proj=geocent +R=470000 +no_defs",
+        "europa": "+proj=geocent +R=1560800 +no_defs",
     }
 
     lleD = {
         "mars": "+proj=longlat +R=3396190 +no_defs",
         #"mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs",
         "moon": "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        #"earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
-        "earth": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+        "earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
+        #"earth": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
+        "ceres": "+proj=longlat +R=470000 +no_defs",
+        "europa": "+proj=longlat +R=1560800 +no_defs",
     }
 
     body = confDict["simParams"]["body"]

@@ -42,6 +42,10 @@ def prep(confDict, dem, nav):
     traces = len(nav)
     if out["combined"] or out["combinedadj"] or out["binary"]:
         oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
+        
+    if out["combinedcolored"]:
+        oDict["combined_center"] = np.zeros((samps, traces)).astype(np.float64)
+        oDict["combined_sides"] = np.zeros((samps, traces)).astype(np.float64)
 
     if out["left"]:
         oDict["left"] = np.zeros((samps, traces)).astype(np.float64)
@@ -71,7 +75,8 @@ def prep(confDict, dem, nav):
     )
 
     print("numFacets {}".format(numFacets))
-    oDict["pwr"] = np.array([])#np.zeros((traces, numFacets)).astype(np.float64)
+    #oDict["pwr"] = np.array([])#np.zeros((traces, numFacets)).astype(np.float64)
+    oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
     oDict["phi"] = np.zeros((traces, numFacets)).astype(np.float32)

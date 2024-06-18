@@ -320,3 +320,54 @@ def GetNav_simpleTest(navfile, navsys, xyzsys):
     df["datum"] = np.zeros(gdf.shape[0])
 
     return df[["x", "y", "z", "datum"]]
+
+def GetNav_ARISE(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    c = 299792458
+    spacecraftHeight = 500000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 3600
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+
+    return df[["x", "y", "z", "datum"]]
+ 
+
+def GetNav_MatisseEuropa(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    #df["datum"] = df["delay"]/1e6
+    ### Roberto ###
+    c = 299792458
+    spacecraftHeight = 50000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 4800
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    ### Roberto ###
+
+    return df[["x", "y", "z", "datum"]]
+
+
+def GetNav_MatisseCeres(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    #df["datum"] = df["delay"]/1e6
+    ### Roberto ###
+    c = 299792458
+    spacecraftHeight = 50000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 4800
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    ### Roberto ###
+
+    return df[["x", "y", "z", "datum"]]
+
