@@ -5,8 +5,9 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pyproj
 import rasterio as rio
+import sys
+from pyproj import Transformer
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -18,6 +19,8 @@ import rasterio as rio
 # areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
 areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
 
+def get_xformer(crs_from, crs_to):
+    return Transformer.from_crs(crs_from=crs_from, crs_to=crs_to)
 
 def GetNav_MARSIS(navfile, navsys, xyzsys):
     c = 299792458
@@ -101,14 +104,13 @@ def GetNav_akHypo(navfile, navsys, xyzsys):
 
 
 def GetNav_DJI(navfile, navsys, xyzsys):
+    xformer = get_xformer(navsys, xyzsys)
 
     df = pd.read_csv(navfile, sep=",")
 
     print(df)
     c = 299792458
-    df["x"], df["y"], df["z"] = pyproj.transform(
-        navsys,
-        xyzsys,
+    df["x"], df["y"], df["z"] = xformer.transform(
         df["lon"].to_numpy(),
         df["lat"].to_numpy(),
         df["hgt"].to_numpy(),
@@ -120,6 +122,7 @@ def GetNav_DJI(navfile, navsys, xyzsys):
 
 
 def GetNav_akHDF(navfile, navsys, xyzsys):
+    xformer = get_xformer(navsys, xyzsys)
     h5 = h5py.File(navfile, "r")
     if "nav0" in h5["ext"].keys():
         nav = h5["ext"]["nav0"][:]
@@ -144,9 +147,7 @@ def GetNav_akHDF(navfile, navsys, xyzsys):
         sys.exit()
 
     h5.close()
-    df["x"], df["y"], df["z"] = pyproj.transform(
-        navsys,
-        xyzsys,
+    df["x"], df["y"], df["z"] = xformer.transform(
         df["lon"].to_numpy(),
         df["lat"].to_numpy(),
         df["hgt"].to_numpy(),
@@ -198,6 +199,8 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
 
 
 def GetNav_QDAetm(navfile, navsys, xyzsys):
+    xformer = get_xformer(navsys, xyzsys)
+
     c = 299792458
     etmCols = [
         "trace",
@@ -218,9 +221,7 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
 
     df = pd.read_csv(navfile, names=etmCols, sep="\s+")
 
-    df["x"], df["y"], df["z"] = pyproj.transform(
-        navsys,
-        xyzsys,
+    df["x"], df["y"], df["z"] = xformer.transform(
         df["lon"].to_numpy(),
         df["lat"].to_numpy(),
         (1000 * df["alt"]).to_numpy(),
@@ -266,6 +267,6 @@ def GetNav_simpleTest(navfile, navsys, xyzsys):
     df = pd.read_csv(navfile, names=navCols)
 
     # No redatum
-    df["datum"] = np.zeros(gdf.shape[0])
+    df["datum"] = np.zeros(df.shape[0])
 
     return df[["x", "y", "z", "datum"]]
