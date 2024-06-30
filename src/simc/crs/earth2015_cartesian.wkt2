@@ -1,4 +1,4 @@
-GEOGCRS["Earth (2015) Cartesian",
+GEODCRS["Earth (2015) Cartesian",
     DATUM["Earth (2015)",
         ELLIPSOID["Earth (2015)",6378136.6,298.257006177324,
             LENGTHUNIT["metre",1]],

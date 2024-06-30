@@ -1,4 +1,4 @@
-GEOGCRS["Moon (2015) Cartesian",
+GEODCRS["Moon (2015) Cartesian",
     DATUM["Moon (2015)",
         ELLIPSOID["Moon (2015)",1737400,0,
             LENGTHUNIT["metre",1]]],
