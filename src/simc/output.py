@@ -54,7 +54,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
 
         if out["echomap"] or out["echomapadj"]:
             oDict["emap"][:, j] = np.bincount(
-                cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
+                cti, weights=pwr * (twtt**4), minlength=oDict["emap"].shape[0]
             )
 
             # Mask out no-power bins
@@ -68,7 +68,6 @@ def build(confDict, oDict, fcalc, nav, i, oi):
 
 
 def save(confDict, oDict, nav, dem, demData, demCrs, win):
-
     out = confDict["outputs"]
     frColor = [255, 0, 255]
     nColor = [50, 200, 200]
@@ -103,6 +102,8 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             nvalid[iy > (demData.shape[0] - 1)] = 0
 
         demz[nvalid] = demData[iy[nvalid], ix[nvalid]]
+        plt.plot(demz)
+        plt.show()
         nvalid[demz == dem.nodata] = 0
 
         dem2xyz = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["xyzsys"])
@@ -168,7 +169,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
                 comments="",
             )
 
-    if out["combined"] or out["binary"]:
+    if out["combined"]:
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
         cimg = Image.fromarray(cstack)
