@@ -102,8 +102,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             nvalid[iy > (demData.shape[0] - 1)] = 0
 
         demz[nvalid] = demData[iy[nvalid], ix[nvalid]]
-        plt.plot(demz)
-        plt.show()
         nvalid[demz == dem.nodata] = 0
 
         dem2xyz = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["xyzsys"])
