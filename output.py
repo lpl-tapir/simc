@@ -21,7 +21,7 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
     cbin_float = (twttAdj / confDict["simParams"]["dt"]).astype(np.float32)
-    angle = 5
+    angle = 3
   
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
@@ -62,12 +62,12 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["emap_angles"][:, j] = np.bincount(
                 cti, weights=theta, minlength=oDict["emap"].shape[0]
             )
-            frFacets = cti[cbin_float == cbin_float.min()] #comparison of floats
+            #frFacets = cti[cbin_float == cbin_float.min()] #comparison of floats
+            frFacets = cti[cbin == cbin.min()] #comparison of integers
             #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
-            #frFacets = cti[cbin == cbin.min()] #comparison of integers
             oDict["frmap"][frFacets, j] = 1
-            for k in range(-9, 10):
-                oDict["frmap"][frFacets+k, j] = 1
+            #for k in range(-9, 10):
+            #    oDict["frmap"][frFacets+k, j] = 1
 
         if out["exportfacetsarray"]:
             mlon, mlat, melev = pyproj.transform(
@@ -142,7 +142,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ## CHECK THIS LINE              <------------------------------------------------------
         nlon, nlat, nelev = pyproj.transform(
             demCrs, confDict["navigation"]["llesys"], gx, gy, demz
-            #confDict["navigation"]["xyzsys"], demCrs, nx, ny, demz # from pds
+            #confDict["navigation"]["xyzsys"], "+proj=longlat +a=3396190 +b=3376200 +no_defs", nx, ny, nz # from pds
         )
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
@@ -368,7 +368,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
         '''
         if out["echomapcolored"]:
-            angle = 5
+            angle = 3
             shift = angle/2
             nColor = [0, 255, 0]
             facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4 # print(egram_angles/12)
