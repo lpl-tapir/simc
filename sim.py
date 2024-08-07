@@ -245,7 +245,11 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     # Using the equation for the dipole pattern and setting the values falling outside this shape to the min float value. 
     #Also, clipping the max value so that not only the surface is visible
     #fcalc[:, 0] = np.where(np.bitwise_or(r <= 100  * np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)), r <= 100  * np.cos(np.pi/2*np.cos(np.radians(-phi)))/np.sin(np.radians(-phi))), fcalc[:,0], sys.float_info.min)
-    #fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.7))
+    #fcalc[:, 0] = np.where(r <= 100  * (np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)))**2, fcalc[:,0], sys.float_info.min) #I need to replace the 100 m with the corresponding window lenght for each measurement
+
+    
+    fcalc[:, 0] = fcalc[:,0] * (np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)))**2
+    fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.7))
 
     fcalc[:, 1] = 2 * r / c  # twtt
     print("    r min {}, max {}".format(np.min(r), np.max(r)))
