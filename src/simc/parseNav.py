@@ -8,6 +8,9 @@ import pandas as pd
 import rasterio as rio
 import sys
 from pyproj import Transformer
+import glob
+import os
+import xml.etree.ElementTree
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -16,14 +19,34 @@ from pyproj import Transformer
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-# areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
-areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+# areoidPath = "./dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+
 
 def get_xformer(crs_from, crs_to):
     return Transformer.from_crs(crs_from=crs_from, crs_to=crs_to)
 
+
+def GetNav_bsiHDF(navfile, navsys, xyzsys):
+    xformer = get_xformer(navsys, xyzsys)
+    h5 = h5py.File(navfile, "r")
+    if "restack" in h5.keys():
+        grp = "restack"
+    else:
+        grp = "raw"
+    df = pd.DataFrame(h5[grp]["gps0"][:])
+    h5.close()
+    df["x"], df["y"], df["z"] = xformer.transform(
+        df["lon"].to_numpy(),
+        df["lat"].to_numpy(),
+        df["hgt"].to_numpy(),
+    )
+    df["datum"] = 0 * df["x"]
+
+    return df[["x", "y", "z", "datum"]]
+
+
 def GetNav_MARSIS(navfile, navsys, xyzsys):
-    c = 299792458
     rec_t = np.dtype(
         [
             ("SCET_FRAME_WHOLE", ">u4"),
@@ -81,11 +104,15 @@ def GetNav_MARSIS(navfile, navsys, xyzsys):
 
     angle = np.abs(np.arctan(df["z"] / np.sqrt(df["x"] ** 2 + df["y"] ** 2)))
 
+    # Mars ellipsoid parameters
     a = 3396190
     b = 3376200
 
+    # Speed of light
+    c = 299792458
+
     marsR = (a * b) / np.sqrt(
-        (a ** 2) * (np.sin(angle) ** 2) + (b ** 2) * (np.cos(angle) ** 2)
+        (a**2) * (np.sin(angle) ** 2) + (b**2) * (np.cos(angle) ** 2)
     )
 
     df["datum"] = (df["r"] - marsR) * 2.0 / c - (256 * 1.0 / 1.4e6)
@@ -93,6 +120,75 @@ def GetNav_MARSIS(navfile, navsys, xyzsys):
     # df["datum"] = ((df["r"] - zval+3396000) * 2.0 / c) - (
     #    256 * 1/2.8e6
     # )
+
+    return df[["x", "y", "z", "datum"]]
+
+
+def GetNav_MARSISoptimized(navfile, navsys, xyzsys):
+    # Parse .tab geometry files from Optimized MARSIS PDS archive
+    cols = [
+        "frame",
+        "ephemeris_time",
+        "time",
+        "latitude",
+        "longitude",
+        "altitude",
+        "sza",
+        "channel1",
+        "channel2",
+        "x",
+        "y",
+        "z",
+        "radial_velocity",
+        "tangential_velocity",
+    ]
+    df = pd.read_csv(navfile, names=cols)
+
+    # Find required XML label for radar data to get datum
+    # should be in same folder as tab file
+    xmls = glob.glob(navfile.replace("_geom.tab", "*.xml"))
+    if len(xmls) == 0:
+        print("No XML data label found! Needed for clutter sim datum.")
+        return -1
+    if len(xmls) > 1:
+        print("Many XML files found matching pattern. Clean up directory.")
+        return -1
+    try:
+        tree = xml.etree.ElementTree.parse(xmls[0])
+        root = tree.getroot()
+        offset = (
+            root.find("{http://pds.nasa.gov/pds4/pds/v1}File_Area_Observational")
+            .find("{http://pds.nasa.gov/pds4/pds/v1}Array_3D_Image")
+            .find("{http://pds.nasa.gov/pds4/pds/v1}Element_Array")
+            .find("{http://pds.nasa.gov/pds4/pds/v1}value_offset")
+        ).text
+        offset = float(offset)
+    except:
+        print("Failed to recover datum from XML file")
+        return -1
+
+    # Calculate ellipsoid radius at each point along track, then time datum
+    df["x"] *= 1e3
+    df["y"] *= 1e3
+    df["z"] *= 1e3
+    df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2)
+    df["altitude"] *= 1e3
+
+    # Speed of light
+    c = 299792458
+
+    # Mars ellipsoid parameters
+    a = 3396190
+    b = 3376200
+
+    angle = np.abs(np.arctan(df["z"] / np.sqrt(df["x"] ** 2 + df["y"] ** 2)))
+
+    marsR = (a * b) / np.sqrt(
+        (a**2) * (np.sin(angle) ** 2) + (b**2) * (np.cos(angle) ** 2)
+    )
+
+    # Ellipsoid datum
+    df["datum"] = (df["altitude"] - offset - (marsR - 3396190)) * 2.0 / c
 
     return df[["x", "y", "z", "datum"]]
 

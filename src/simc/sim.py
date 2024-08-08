@@ -123,10 +123,9 @@ rz: array of z components of the radii vector to the center of each facet
 
 
 def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
-
     # calc lenght of both vectors
-    mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
-    mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
+    mag1 = np.sqrt(vx_p**2 + vy_p**2 + vz_p**2)
+    mag2 = np.sqrt(vx_a**2 + vy_a**2 + vz_a**2)
 
     dot_product = (vx_p * vx_a) + (vy_p * vy_a) + (vz_p * vz_a)
     return np.degrees(np.arccos(dot_product / (mag1 * mag2)))
@@ -173,7 +172,7 @@ def calcFacetsFriis(f, px, py, pz, ua, c):
     ry = py - my
     rz = pz - mz
 
-    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    r = np.sqrt(rx**2 + ry**2 + rz**2)
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -193,7 +192,7 @@ def calcFacetsFriis(f, px, py, pz, ua, c):
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r**4))  # power
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
@@ -262,7 +261,7 @@ def calcFacets(f, px, py, pz, c):
     ry = py - my
     rz = pz - mz
 
-    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    r = np.sqrt(rx**2 + ry**2 + rz**2)
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -282,7 +281,7 @@ def calcFacets(f, px, py, pz, c):
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r**4))  # power
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
