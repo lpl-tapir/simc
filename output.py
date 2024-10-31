@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import skimage.transform
 import curve
 import h5py
+import rasterio
 
-
-def build(confDict, oDict, fcalc, nav, i, oi):
+def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
     # bincount requires assumptions - all positive integers, nothing greater than tracelen. Need to make sure these are met
     out = confDict["outputs"]
     spt = confDict["simParams"]["tracesamples"]
@@ -22,8 +22,25 @@ def build(confDict, oDict, fcalc, nav, i, oi):
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
     cbin_float = (twttAdj / confDict["simParams"]["dt"]).astype(np.float32)
     angle = 3
-  
+
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
+
+    # Add georef echo power map holder if necessary
+    # This cannot go in prep because it needs dem window information
+    # Add echo power map ref if necessary
+    if "emap_ref" not in oDict.keys():
+        scale = 4
+        oDict["emap_ref"] = np.zeros(
+            (win.height // scale + 1, win.width // scale + 1)
+        )  # georeferenced echo power map
+        oDict["emap_ref_count"] = np.zeros(
+            (win.height // scale + 1, win.width // scale + 1)
+        )  # georeferenced echo power map
+        oDict["emap_ref_xform"] = dem.window_transform(win) * dem.window_transform(
+            win
+        ).scale(
+            scale
+        )  # Edit resolution
 
     for j in oi:
         if out["combined"] or out["combinedadj"] or out["binary"]:
@@ -68,6 +85,18 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             oDict["frmap"][frFacets, j] = 1
             #for k in range(-9, 10):
             #    oDict["frmap"][frFacets+k, j] = 1
+
+            # Map facets back to dem grid for georeferenced echo power map
+            gt = ~oDict["emap_ref_xform"]
+            gtx, gty, gtz = xform.transform(
+                fcalc[:, 5], fcalc[:, 6], fcalc[:, 7], direction="FORWARD"
+            )
+            ix, iy = gt * (gtx, gty)
+            ix = ix.astype(np.int32)
+            iy = iy.astype(np.int32)
+
+            oDict["emap_ref"][iy, ix] += fcalc[:, 0]
+            oDict["emap_ref_count"][iy, ix] += 1
 
         if out["exportfacetsarray"]:
             mlon, mlat, melev = pyproj.transform(
@@ -302,6 +331,22 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomap.png")
+
+        with rasterio.open(
+            confDict["paths"]["outpath"] + "echomap.tif",
+            "w",
+            driver="GTiff",
+            height=oDict["emap_ref"].shape[0],
+            width=oDict["emap_ref"].shape[1],
+            count=1,
+            dtype=np.float32,
+            crs=dem.crs,
+            transform=oDict["emap_ref_xform"],
+        ) as dst:
+            dst.write_band(
+                1,
+                np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(np.float32),
+            )
 
     if out["echomapadj"]:
         # Resize

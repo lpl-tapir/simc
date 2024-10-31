@@ -82,7 +82,7 @@ def main():
 
         # Putting things back in order
         oi = np.where(inv == i)[0]
-        output.build(confDict, oDict, fcalc, nav, i, oi)
+        output.build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi)
 
     nav = nav.iloc[inv, :].reset_index()
     output.save(confDict, oDict, nav, dem, demData, demCrs, win)
