@@ -27,6 +27,39 @@ def get_xformer(crs_from, crs_to):
     return Transformer.from_crs(crs_from=crs_from, crs_to=crs_to)
 
 
+def GetNav_csv(navfile, navsys, xyzsys):
+    # Parse csv with fields named "x", "y", and "z"
+
+    xformer = get_xformer(navsys, xyzsys)
+
+    df = pd.read_csv(navfile, sep=",")
+
+    df["x"], df["y"], df["z"] = xformer.transform(
+        df["x"].to_numpy(),
+        df["y"].to_numpy(),
+        df["z"].to_numpy(),
+    )
+
+    df["datum"] = 0
+
+    return df
+
+
+def GetNav_IRWIS(navfile, navsys, xyzsys):
+    # Loader for NSIDC IR WIS L2 files
+    xformer = get_xformer(navsys, xyzsys)
+    df = pd.read_csv(navfile)
+
+    df["x"], df["y"], df["z"] = xformer.transform(
+        df["LON"].to_numpy(),
+        df["LAT"].to_numpy(),
+        df["ELEVATION"].to_numpy(),
+    )
+    df["datum"] = 0 * df["x"]
+
+    return df[["x", "y", "z", "datum"]]
+
+
 def GetNav_bsiHDF(navfile, navsys, xyzsys):
     xformer = get_xformer(navsys, xyzsys)
     h5 = h5py.File(navfile, "r")
@@ -204,7 +237,6 @@ def GetNav_DJI(navfile, navsys, xyzsys):
 
     df = pd.read_csv(navfile, sep=",")
 
-    print(df)
     c = 299792458
     df["x"], df["y"], df["z"] = xformer.transform(
         df["lon"].to_numpy(),
@@ -214,6 +246,7 @@ def GetNav_DJI(navfile, navsys, xyzsys):
     df["datum"] = 0 * df["x"]
     traceSamples = 1000
     # df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
+
     return df[["x", "y", "z", "datum"]]
 
 
