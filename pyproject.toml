@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [tool.setuptools.package-data]
-"simc.crs" = ["*.wkt2"]
+"simc.crs" = ["*.wkt?"]
 
 [project.urls]
 repository = "https://github.com/lpl-tapir/simc"
