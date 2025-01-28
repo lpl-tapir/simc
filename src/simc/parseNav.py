@@ -28,7 +28,7 @@ def get_xformer(crs_from, crs_to):
 
 
 def GetNav_csv(navfile, navsys, xyzsys):
-    # Parse csv with fields named "x", "y", and "z"
+    # Parse csv with fields named "x", "y", "z", and "datum"
 
     xformer = get_xformer(navsys, xyzsys)
 
@@ -40,7 +40,14 @@ def GetNav_csv(navfile, navsys, xyzsys):
         df["z"].to_numpy(),
     )
 
-    df["datum"] = 0
+    required = ["x", "y", "z", "datum"]
+
+    for r in required:
+        if r not in df.keys():
+            raise RuntimeError(
+                "Missing necessary field in navigation file.\n\tRequired fields: %s\n\tFound fields: %s"
+                % (required, list(df.keys()))
+            )
 
     return df
 

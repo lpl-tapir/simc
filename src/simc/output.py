@@ -229,10 +229,22 @@ def save(confDict, oDict, nav, dem, win, demData):
         cimg.save(confDict["paths"]["outpath"] + "combined.png")
 
     if out["combinedadj"]:
-        cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
-        # Auto adjustment
-        scaling = np.array(simc.curve.curve)
-        cgram = scaling[cgram] * 255
+        # cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
+        cgram = oDict["combined"]
+
+        # Scale image - clip by 2% on low and high end then log scale
+        cliplo = np.percentile(cgram[cgram > 0], 1)
+        # cliphi = np.percentile(cgram[cgram > 0], 99.9)
+        # cgram[cgram < cliplo] = cliplo
+        # cgram[cgram > cliphi] = cliphi
+        cgram = np.log10(cgram + cliplo)
+        cgram -= np.min(cgram)
+        cgram /= np.max(cgram)
+        cgram *= 255
+        cgram = cgram.astype(np.uint8)
+
+        # scaling = np.array(simc.curve.curve)
+        # cgram = scaling[cgram] * 255
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
         # Add in first return and nadir locations if requested
@@ -281,6 +293,17 @@ def save(confDict, oDict, nav, dem, win, demData):
         # eimg = eimg.convert("RGB")
         # eimg.save(confDict["paths"]["outpath"] + "echomap.png")
 
+        # Scale echo power map
+        egram = oDict["emap_ref"]
+        egram[oDict["emap_ref_count"] > 0] /= oDict["emap_ref_count"][
+            oDict["emap_ref_count"] > 0
+        ]
+
+        # Scale image - clip by 2% on low and high end then log scale
+        cliplo = np.percentile(egram[egram > 0], 1)
+        egram = np.log10(egram + cliplo / (np.max(egram + cliplo)))
+        egram[oDict["emap_ref_count"] == 0] = np.nan
+
         with rasterio.open(
             confDict["paths"]["outpath"] + "echomap.tif",
             "w",
@@ -294,9 +317,7 @@ def save(confDict, oDict, nav, dem, win, demData):
         ) as dst:
             dst.write_band(
                 1,
-                np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(
-                    np.float32
-                ),
+                egram,
             )
 
     if out["echomapadj"]:
