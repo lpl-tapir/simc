@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import pyproj
+import rasterio as rio
 
 import simc.sim
 
@@ -89,7 +90,7 @@ def prep(confDict, dem, nav):
     vx = np.gradient(nav["x"])
     vy = np.gradient(nav["y"])
     vz = np.gradient(nav["z"])
-    vMag = np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
+    vMag = np.sqrt(vx**2 + vy**2 + vz**2)
     v = np.stack((vx / vMag, vy / vMag, vz / vMag), axis=1)
     nav["uv"] = list(v)
 
@@ -97,7 +98,7 @@ def prep(confDict, dem, nav):
     cx = -nav["x"]
     cy = -nav["y"]
     cz = -nav["z"]
-    cMag = np.sqrt(cx ** 2 + cy ** 2 + cz ** 2)
+    cMag = np.sqrt(cx**2 + cy**2 + cz**2)
     c = np.stack((cx / cMag, cy / cMag, cz / cMag), axis=1)
 
     # Right pointing cross track vector
@@ -120,11 +121,8 @@ def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
     xform = pyproj.Transformer.from_crs(xyzsys, demCrs)
     demX, demY, demZ = xform.transform(corners[:, 0], corners[:, 1], corners[:, 2])
     gt = ~dem.transform
-    # print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
-
-    # print(bounds)
     with open(confDict["paths"]["logpath"], "a") as fd:
         if bounds[0] < 0:
             fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))

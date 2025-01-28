@@ -194,13 +194,13 @@ def readConfig(argDict):
     xyzD = {
         "mars": base + "/crs/mars2015_cartesian.wkt2",
         "moon": base + "/crs/moon2015_cartesian.wkt2",
-        "earth": base + "/crs/earth2015_cartesian.wkt2",
+        "earth": base + "/crs/epsg4978.wkt",
     }
 
     lleD = {
         "mars": base + "/crs/mars2015_planetocentric.wkt2",
         "moon": base + "/crs/moon2015_planetocentric.wkt2",
-        "earth": base + "/crs/earth2015_planetocentric.wkt2",
+        "earth": base + "/crs/epsg4326.wkt",
     }
 
     for k, v in xyzD.items():

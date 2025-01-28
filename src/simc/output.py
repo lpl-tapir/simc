@@ -6,14 +6,34 @@ import numpy as np
 import pyproj
 import skimage.transform
 from PIL import Image
+import rasterio
 
 import simc.curve
 
 
-def build(confDict, oDict, fcalc, nav, i, oi):
+def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
     # bincount requires assumptions - all positive integers, nothing greater than tracelen. Need to make sure these are met
     out = confDict["outputs"]
     spt = confDict["simParams"]["tracesamples"]
+
+    cmt = """
+    # Apply ellipsoid correction
+    angle = np.abs(
+        np.arctan(nav["z"][i] / np.sqrt(nav["x"][i] ** 2 + nav["y"][i] ** 2))
+    )
+
+    # Mars ellipsoid parameters
+    a = 3396190
+    b = 3376200
+
+    # Speed of light
+    c = 299792458
+
+    marsR = (a * b) / np.sqrt(
+        (a**2) * (np.sin(angle) ** 2) + (b**2) * (np.cos(angle) ** 2)
+    )
+
+    corr = 2 * (3396000 - marsR) / 3e8"""
 
     cti = fcalc[:, 8].astype(np.int32)
     lr = fcalc[:, 2]
@@ -27,6 +47,21 @@ def build(confDict, oDict, fcalc, nav, i, oi):
 
     # Modulo enforces sharad FPB matching behavior. Should probably do this in a better way
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
+
+    # Add echo power map ref if necessary
+    if "emap_ref" not in oDict.keys():
+        scale = 2
+        oDict["emap_ref"] = np.zeros(
+            (win.height // scale + 1, win.width // scale + 1)
+        )  # georeferenced echo power map
+        oDict["emap_ref_count"] = np.zeros(
+            (win.height // scale + 1, win.width // scale + 1)
+        )  # georeferenced echo power map
+        oDict["emap_ref_xform"] = dem.window_transform(win) * dem.window_transform(
+            win
+        ).scale(
+            scale
+        )  # Edit resolution
 
     for j in oi:
         if out["combined"] or out["combinedadj"] or out["binary"]:
@@ -64,10 +99,29 @@ def build(confDict, oDict, fcalc, nav, i, oi):
             frFacets = cti[cbin_mask == np.nanmin(cbin_mask)]
             oDict["frmap"][frFacets, j] = 1
 
+            # Map facets back to dem grid
+            gt = ~oDict["emap_ref_xform"]
+            gtx, gty, gtz = xform.transform(
+                fcalc[:, 5], fcalc[:, 6], fcalc[:, 7], direction="FORWARD"
+            )
+            ix, iy = gt * (gtx, gty)
+            ix = ix.astype(np.int32)
+            iy = iy.astype(np.int32)
+
+            oDict["emap_ref"][iy, ix] += fcalc[:, 0]
+            oDict["emap_ref_count"][iy, ix] += 1
+
+            # if not i % 1000 and i != 0:
+            #    plt.imshow(oDict["emap_ref"] / oDict["emap_ref_count"], aspect="auto")
+            #    plt.show()
+
+    # valid = np.ones(ix.shape).astype(bool)
+    # demz = np.zeros(ix.shape).astype(np.float32)
+
     return 0
 
 
-def save(confDict, oDict, nav, dem, demData, demCrs, win):
+def save(confDict, oDict, nav, dem, win, demData):
     out = confDict["outputs"]
     frColor = [255, 0, 255]
     nColor = [50, 200, 200]
@@ -78,7 +132,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         y = nav["y"].to_numpy()
         z = nav["z"].to_numpy()
 
-        xyz2dem = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], demCrs)
+        xyz2dem = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], dem.crs)
         gx, gy, gz = xyz2dem.transform(x, y, z)
 
         gt = ~dem.window_transform(win)
@@ -104,11 +158,11 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         demz[nvalid] = demData[iy[nvalid], ix[nvalid]]
         nvalid[demz == dem.nodata] = 0
 
-        dem2xyz = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["xyzsys"])
+        dem2xyz = pyproj.Transformer.from_crs(dem.crs, confDict["navigation"]["xyzsys"])
         nx, ny, nz = dem2xyz.transform(gx, gy, demz)
 
-        dem2lle = pyproj.Transformer.from_crs(demCrs, confDict["navigation"]["llesys"])
-        nlon, nlat, nelev = dem2lle.transform(gx, gy, demz)
+        dem2lle = pyproj.Transformer.from_crs(dem.crs, confDict["navigation"]["llesys"])
+        nlat, nlon, nelev = dem2lle.transform(gx, gy, demz)
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
 
@@ -150,7 +204,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         xyz2lle = pyproj.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"]
         )
-        flon, flat, felev = xyz2lle.transform(fret[:, 0], fret[:, 1], fret[:, 2])
+        flat, flon, felev = xyz2lle.transform(fret[:, 0], fret[:, 1], fret[:, 2])
 
         if out["fret"]:
             fretInfo = np.zeros((nav.shape[0], 4))
@@ -219,13 +273,31 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         )
 
     if out["echomap"]:
-        egram = oDict["emap"] * (255.0 / oDict["emap"].max())
-        egram_color = np.copy(egram)
+        # egram = oDict["emap"] * (255.0 / oDict["emap"].max())
+        # egram_color = np.copy(egram)
 
-        estack = np.dstack((egram, egram, egram)).astype(np.uint8)
-        eimg = Image.fromarray(estack)
-        eimg = eimg.convert("RGB")
-        eimg.save(confDict["paths"]["outpath"] + "echomap.png")
+        # estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+        # eimg = Image.fromarray(estack)
+        # eimg = eimg.convert("RGB")
+        # eimg.save(confDict["paths"]["outpath"] + "echomap.png")
+
+        with rasterio.open(
+            confDict["paths"]["outpath"] + "echomap.tif",
+            "w",
+            driver="GTiff",
+            height=oDict["emap_ref"].shape[0],
+            width=oDict["emap_ref"].shape[1],
+            count=1,
+            dtype=np.float32,
+            crs=dem.crs,
+            transform=oDict["emap_ref_xform"],
+        ) as dst:
+            dst.write_band(
+                1,
+                np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(
+                    np.float32
+                ),
+            )
 
     if out["echomapadj"]:
         # Resize

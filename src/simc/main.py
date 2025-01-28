@@ -29,13 +29,19 @@ def main():
         confDict["navigation"]["navfunc"],
     )
 
+    xform = pyproj.Transformer.from_crs(
+        confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"]
+    )
+
     with open(confDict["paths"]["logpath"], "w") as fd:
         fd.write(
             "University of Arizona Clutter Simulator Log File\nVersion %.1f\n" % version
         )
         pprint.pprint(confDict, stream=fd)
 
-    xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], dem.crs)
+    # Parse dem CRS
+    demcrs = pyproj.CRS.from_user_input(dem.crs)
+    xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], demcrs)
 
     nav, oDict, inv = simc.prep.prep(confDict, dem, nav)
 
@@ -71,10 +77,10 @@ def main():
 
         # Putting things back in order
         oi = np.where(inv == i)[0]
-        simc.output.build(confDict, oDict, fcalc, nav, i, oi)
+        simc.output.build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi)
 
     nav = nav.iloc[inv, :].reset_index()
-    simc.output.save(confDict, oDict, nav, dem, demData, dem.crs, win)
+    simc.output.save(confDict, oDict, nav, dem, win, demData)
     dem.close()
 
     stopTime = time.time()
