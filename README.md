@@ -29,6 +29,6 @@ If you wish to install simc with the intent to modify the source code we recomme
 1. Use git to clone this repository  
    `git clone https://github.com/lpl-tapir/simc.git`  
 2. Navigate into the cloned repository and use pip to install it in editable mode  
-   `pip install -e`
+   `pip install -e .`
   
 This installation procedure will create the same `simc` executable as the normal installation, however the `simc` executable is connected to your version of the simc git repo.
