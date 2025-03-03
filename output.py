@@ -29,7 +29,7 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
     # This cannot go in prep because it needs dem window information
     # Add echo power map ref if necessary
     if "emap_ref" not in oDict.keys():
-        scale = 4
+        scale = 8
         oDict["emap_ref"] = np.zeros(
             (win.height // scale + 1, win.width // scale + 1)
         )  # georeferenced echo power map
@@ -47,12 +47,14 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
             oDict["combined"][:, j] = np.bincount(
                 cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
             )
+            ''' add if for colored echomap
             oDict["combined_center"][:, j] = np.bincount(
                 cbin, weights=pwr*(theta <= (angle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
             oDict["combined_sides"][:, j] = np.bincount(
                 cbin, weights=pwr*(theta > (angle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
+            '''
 
         if out["left"]:
             oDict["left"][:, j] = np.bincount(
@@ -113,9 +115,9 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
 
             filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
             print("saving {}...................".format(filename))
+            fcalc[:,0] = 10*np.log10(fcalc[:,0] / np.max(fcalc[:,0])) #exporting facets in dB
             np.savetxt(
                 confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
-                #fcalc[np.where(fcalc[:,0] != sys.float_info.min)[0],[0,1,9,10,5,6,7]], # TODO: export only values part of the antenna model
                 fcalc[:,[0,1,9,10,5,6,7]],
                 delimiter=",",
                 header="power,twtt,theta,phi,mx,my,mz",
@@ -172,6 +174,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         nlon, nlat, nelev = pyproj.transform(
             demCrs, confDict["navigation"]["llesys"], gx, gy, demz
             #confDict["navigation"]["xyzsys"], "+proj=longlat +a=3396190 +b=3376200 +no_defs", nx, ny, nz # from pds
+            #confDict["navigation"]["xyzsys"], "+proj=longlat +R=3396190 +no_defs", nx, ny, nz # from pds
         )
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
@@ -180,7 +183,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             ((2 * nr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
-
         if out["nadir"]:
             nadInfo = np.zeros((nav.shape[0], 4))
             nadInfo[:, 0] = nlat
@@ -212,7 +214,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ).astype(np.int32)
 
         flon, flat, felev = pyproj.transform(
-            #commenting out this lines that were working for CTX
+            #commenting out the following 2 lines that were working for CTX instead of the confDict
             #demCrs,
             #"+proj=longlat +R=3396190 +no_defs", #from pds
             confDict["navigation"]["xyzsys"],
@@ -265,10 +267,9 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
-
+        '''
         #The following lines are needed to align the clutter sim with the drone GPR first return
         #TODO: move this parameter to a config file
-        '''
         for i in range(cgram.shape[1]):
             print(i)
             cgram[:, i] = np.roll(cgram[:,i], 35)
@@ -331,7 +332,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomap.png")
-
         with rasterio.open(
             confDict["paths"]["outpath"] + "echomap.tif",
             "w",
@@ -347,7 +347,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
                 1,
                 np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(np.float32),
             )
-
     if out["echomapadj"]:
         # Resize
         emap = oDict["emap"]
@@ -372,15 +371,10 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         for i in range(egram.shape[1]):
             frgram[:, i] = np.bincount(nidx, weights=frmap[:, i], minlength=yDim)
 
-        #The following line is needed to handle the values outside the dipole pattern of the drone GPR
-        #egram[egram == 0] = np.nan
         nz = egram != 0
         hclip = 1.5
         egram[nz] = egram[nz] - (egram[nz].mean() - hclip * egram[nz].std())
         egram = egram * (255.0 / (egram[nz].mean() + hclip * egram[nz].std()))
-        #The following two lines are needed to handle the values outside the dipole pattern of the drone GPR
-        #egram[nz] = egram[nz] - (np.nanmean(egram[nz]) - hclip * np.nanstd(egram[nz]))
-        #egram = egram * (255.0 / (np.nanmean(egram[nz]) + hclip * np.nanstd(egram[nz])))
         egram = np.minimum(egram, 255)
         egram = np.maximum(0, egram)
 

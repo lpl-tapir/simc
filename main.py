@@ -15,7 +15,6 @@ def main():
     argDict = ingest.parseCmd()
     confDict = ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
-    print("dem crs{}".format(dem.crs))
 
     nav = ingest.readNav(
         confDict["paths"]["navpath"],
@@ -32,21 +31,22 @@ def main():
 
    
     demCrs = dem.crs
-    #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
-    demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
-    #demCrs = "+proj=longlat +R=3396190 +no_defs"
     try:
         xform = pyproj.transformer.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], demCrs
         )
+        print(xform)
     except:
         print("reading dem crs failed, setting crs to xform manually")
+        #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
+        #demCrs = "+proj=longlat +datum=WGS84 +no_defs" #drone
+        demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
+        #demCrs = "+proj=longlat +R=3396190 +no_defs" # Use the following line for CTX DEM
         xform = pyproj.transformer.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], demCrs
         )
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
-
     bounds = prep.calcBounds(
         confDict,
         dem,
@@ -57,7 +57,6 @@ def main():
         confDict["facetParams"]["ctdist"],
     )
 
-    print("bounds {}".format(bounds))
     rowSub = (bounds[2], bounds[3] + 1)
     colSub = (bounds[0], bounds[1] + 1)
 

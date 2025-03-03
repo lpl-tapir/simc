@@ -48,7 +48,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     valid = np.ones(ix.shape).astype(np.bool)
     demz = np.zeros(ix.shape).astype(np.float32)
 
-    #print("demData {}".format(demData))
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
@@ -88,7 +87,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     # If there are no valid facets
     if np.sum(valid) == 0:
         return np.array([])
-
     # Transform back to xyz for facet calcs
     sx, sy, sz = xform.transform(gtx, gty, demz, direction="INVERSE")
 
@@ -100,7 +98,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
-    
     center_plane = None  
     if confDict["simParams"]["centerplane"]:
         center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
@@ -115,7 +112,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         confDict["simParams"]["speedlight"],
     )
 
-    #print("!!! Applying half wave dipole gain !!!")
+    print("!!! Applying half wave dipole gain !!!")
     fcalc = half_wave_dipole_gain(fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i])
 
     return fcalc
@@ -155,7 +152,6 @@ def half_wave_dipole_gain(fcalc, xant, uant):
     eps = 1e-4  # just a guess...
     mask = np.abs(s) < eps
     fcalc[mask, 0] = 0
-
     return fcalc
 
 
@@ -281,19 +277,10 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     ct = ct / (r * area * 2)
 
     fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
-
-    # Using the equation for the dipole pattern and setting the values falling outside this shape to the min float value. 
-    #Also, clipping the max value so that not only the surface is visible
-    #fcalc[:, 0] = np.where(np.bitwise_or(r <= 100  * np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)), r <= 100  * np.cos(np.pi/2*np.cos(np.radians(-phi)))/np.sin(np.radians(-phi))), fcalc[:,0], sys.float_info.min)
-    #fcalc[:, 0] = np.where(r <= 100  * (np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)))**2, fcalc[:,0], sys.float_info.min) #I need to replace the 100 m with the corresponding window lenght for each measurement
-
-    
-    # fcalc[:, 0] = fcalc[:,0] * (np.cos(np.pi/2*np.cos(np.radians(phi)))/np.sin(np.radians(phi)))**2 # instead of this line use the new function instead
-    #fcalc[:,0] = np.clip(fcalc[:,0], np.min(fcalc[:,0]), np.percentile(fcalc[:,0], 99.9))
-
+    #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 1.5), np.percentile(fcalc[:, 0], 98.5))
+    #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.25), np.percentile(fcalc[:, 0], 99.75))
+    fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.4), np.percentile(fcalc[:, 0], 99.6))
     fcalc[:, 1] = 2 * r / c  # twtt
-    print("    r min {}, max {}".format(np.min(r), np.max(r)))
-    print("theta min {}, max {}".format(np.min(theta), np.max(theta)))
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
     fcalc[:, 5] = mx  # Facet centers
@@ -400,7 +387,6 @@ def genFacets(s, valid):
     # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-    #print("gen facets {} {}".format(h,w))
     nfacet = (w - 1) * (h - 1) * 2  # number of facets
     qt = int(nfacet / 4)  # quarter
     hf = int(nfacet / 2)  # half
