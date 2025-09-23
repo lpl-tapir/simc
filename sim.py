@@ -36,9 +36,10 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     else:
         # Transform to dem CRS and sample DEM
         gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+        '''
         print("gx: {}".format(gx))
         print("gy: {}".format(gy))
-        print("gz: {}".format(gz))
+        print("gz: {}".format(gz))'''
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -98,11 +99,13 @@ def sim(confDict, dem, nav, xform, demData, win, i):
 
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
+
     center_plane = None  
     if confDict["simParams"]["centerplane"]:
         center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
 
     fcalc = calcFacetsFriis(
+        i,
         facets,
         nav["x"][i],
         nav["y"][i],
@@ -110,10 +113,12 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         nav["uv"][i],
         center_plane,
         confDict["simParams"]["speedlight"],
+        confDict["simParams"]["antenna_pattern"]
     )
 
-    print("!!! Applying half wave dipole gain !!!")
-    fcalc = half_wave_dipole_gain(fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i])
+    if confDict["simParams"]["antenna_pattern"] == "half_wave_dipole": #used for drone GPR only 
+        #print("!!! Applying half wave dipole gain !!!")
+        fcalc = half_wave_dipole_gain(fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i])
 
     return fcalc
 
@@ -155,38 +160,7 @@ def half_wave_dipole_gain(fcalc, xant, uant):
     return fcalc
 
 
-'''
-Parameters
----------------
-rx: array of x components of the radii vector to the center of each facet
-ry: array of y components of the radii vector to the center of each facet
-rz: array of z components of the radii vector to the center of each facet
-'''
-def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
-
-    #calc lenght of both vectors
-    mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
-    mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
-
-    dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
-    return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
-
-def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
-    # obtaining the center of the plane from one of the corners of a facet in the center
-    # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
-    
-    ctSteps = ctDist/ctStep
-    atSteps = atDist/atStep
-    #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
-    center_facet_index = int(ctSteps*atSteps+ctSteps-1)
-    #print("center_facet_index {}".format(center_facet_index))
-    #print(f[center_facet_index])
-    cx = f[center_facet_index, 3]
-    cy = f[center_facet_index, 4]
-    cz = f[center_facet_index, 5]
-    return [cx, cy, cz]
-
-def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
+def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     # Calculate return power and twtt for facets
     # Based on modified Friis transmission equation
     # explained in Choudhary, Holt, Kempf 2016
@@ -207,57 +181,17 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     my = (f[:, 1] + f[:, 4] + f[:, 7]) / 3
     mz = (f[:, 2] + f[:, 5] + f[:, 8]) / 3
 
-
     # Calc distances to platform/twtt
     rx = px - mx
     ry = py - my
     rz = pz - mz
 
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+
     if center_plane != None:
         # Calculate angles of return
-        theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
+        theta, phi = calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane)
 
-        '''
-        # obtaining the center of the plane from one of the corners of a facet in the center
-        # the corner 2 of the the facet facets with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
-        center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
-        print("center_facet_index {}".format(center_facet_index))
-        print(f[center_facet_index])
-       '''
-        cmx = mx - center_plane[0]
-        cmy = my - center_plane[1]
-        cmz = mz - center_plane[2]
-        # The following lines are just to print the fret and nadir coordinates in a specific CRS
-        '''
-        print("center plane {}".format(center_plane))
-        lon, lat, elev = pyproj.transform(
-            "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
-            center_plane[0],            
-            center_plane[1],
-            center_plane[2],
-        )
-        print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-        lon, lat, elev = pyproj.transform(
-            "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
-            "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
-            px,            
-            py,
-            pz,            
-        )
-        print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
-        print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
-        print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
-        '''
-        phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
-        phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
-        '''
-        print("ua {}".format(ua))
-        print(cx)
-        print(cy)
-        print(cz)
-        '''
     ## Calc area and normal vector
     # Calc 2->1 vector
     f[:, 3] = f[:, 0] - f[:, 3]  # x
@@ -277,9 +211,21 @@ def calcFacetsFriis(f, px, py, pz, ua, center_plane, c):
     ct = ct / (r * area * 2)
 
     fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
-    #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 1.5), np.percentile(fcalc[:, 0], 98.5))
-    #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.25), np.percentile(fcalc[:, 0], 99.75))
-    fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.4), np.percentile(fcalc[:, 0], 99.6))
+
+    if antenna_pattern == "half_wave_dipole": #used for drone GPR only
+        #Using clip and percentile to avoid extreme values; without clipping the clutter simulations saturate and only the
+        #surface is visible. Further explanation from from Aguilar et al. (2025):
+        #One difference in the clutter simulations between orbital and drone-borne sounding
+        #radar is power decay between nadir and off-nadir. In the case of an orbiter like SHARAD, the
+        #spacecraft height (300 km) is greater than the time window in free space (40 km). Therefore,
+        #the effect of power decay between the nadir point and off-nadir reflectors, governed by the
+        #inverse square law, is negligible. In the case of DGPR, most of the power is reflected at the
+        #closest point since the flight altitude (< 10 m) is much smaller than the time window in free space (~ 100 m)
+
+        #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 1.5), np.percentile(fcalc[:, 0], 98.5))
+        fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.25), np.percentile(fcalc[:, 0], 99.75)) #2 color works
+        #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.4), np.percentile(fcalc[:, 0], 99.6))
+
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
@@ -468,3 +414,94 @@ def genFacets(s, valid):
     f[tq:nfacet, 11] = wm1.flatten()
 
     return f[fkeep]
+
+
+def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane):
+
+    """
+    Calculate the angles of return (theta and phi) for each facet
+
+    Args:
+        px, py, pz: Navigation points
+        rx, ry, rz: Distance from the platform to the fact
+        mx, my, mz: Coordinate of the center of each facet
+        xant: (x, y, z) tuple with antenna position
+        center_plane: Center coordinates of the plane
+
+    Returns:
+        theta and phi
+    """
+    theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
+
+    '''
+    # obtaining the center of the plane from one of the corners of a facet in the center
+    center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
+    print("center_facet_index {}".format(center_facet_index))
+    print(f[center_facet_index])
+    '''
+    cmx = mx - center_plane[0]
+    cmy = my - center_plane[1]
+    cmz = mz - center_plane[2]
+    # The following lines are just to print the fret and nadir coordinates in a specific CRS
+    '''
+    print("center plane {}".format(center_plane))
+    lon, lat, elev = pyproj.transform(
+        "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
+        "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
+        center_plane[0],            
+        center_plane[1],
+        center_plane[2],
+    )
+    print("nadir lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+    lon, lat, elev = pyproj.transform(
+        "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
+        "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=longlat +a=1737400 +b=1737400 +no_defs",
+        px,            
+        py,
+        pz,            
+    )
+    print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
+    print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
+    print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
+    '''
+    phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
+    phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
+    '''
+    print("ua {}".format(ua))
+    print(cx)
+    print(cy)
+    print(cz)
+    '''
+    return theta, phi
+
+'''
+Parameters
+---------------
+rx: array of x components of the radii vector to the center of each facet
+ry: array of y components of the radii vector to the center of each facet
+rz: array of z components of the radii vector to the center of each facet
+'''
+def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
+
+    #calc lenght of both vectors
+    mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
+    mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
+
+    dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
+    return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
+
+def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
+    # obtaining the center of the plane from one of the corners of a facet in the center
+    # the corner 2 of the facet with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
+
+    ctSteps = ctDist/ctStep
+    atSteps = atDist/atStep
+    #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
+    center_facet_index = int(ctSteps*atSteps+ctSteps-1)
+    #print("center_facet_index {}".format(center_facet_index))
+    #print(f[center_facet_index])
+    cx = f[center_facet_index, 3]
+    cy = f[center_facet_index, 4]
+    cz = f[center_facet_index, 5]
+    return [cx, cy, cz]
+

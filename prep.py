@@ -42,8 +42,9 @@ def prep(confDict, dem, nav):
     traces = len(nav)
     if out["combined"] or out["combinedadj"] or out["binary"]:
         oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
+        #oDict["combined_center"] = np.zeros((samps, traces)).astype(np.float64)
         
-    if out["combinedcolored"]:
+    if out["combinedcolored"] or out["echomapcolored"]:
         oDict["combined_center"] = np.zeros((samps, traces)).astype(np.float64)
         oDict["combined_sides"] = np.zeros((samps, traces)).astype(np.float64)
 
@@ -53,7 +54,7 @@ def prep(confDict, dem, nav):
     if out["right"]:
         oDict["right"] = np.zeros((samps, traces)).astype(np.float64)
 
-    if out["echomap"] or out["echomapadj"]:
+    if out["echomap"] or out["echomapadj"] or out["echomapcolored"] or out["echomapgeoref"]:
         numCTfacets = int(
             2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"]
         )

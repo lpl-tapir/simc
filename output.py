@@ -21,7 +21,6 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
     cbin_float = (twttAdj / confDict["simParams"]["dt"]).astype(np.float32)
-    angle = 3
 
     cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
 
@@ -47,14 +46,15 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
             oDict["combined"][:, j] = np.bincount(
                 cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
             )
-            ''' add if for colored echomap
+
+        if out["combinedcolored"] or out["echomapcolored"]:
+            swathAngle = float(confDict["simParams"]["swathangle"])
             oDict["combined_center"][:, j] = np.bincount(
-                cbin, weights=pwr*(theta <= (angle/2)), minlength=confDict["simParams"]["tracesamples"]
+                cbin, weights=pwr*(theta <= (swathAngle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
             oDict["combined_sides"][:, j] = np.bincount(
-                cbin, weights=pwr*(theta > (angle/2)), minlength=confDict["simParams"]["tracesamples"]
+                cbin, weights=pwr*(theta > (swathAngle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
-            '''
 
         if out["left"]:
             oDict["left"][:, j] = np.bincount(
@@ -74,7 +74,7 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
             ffacet = fcalc[twttAdj == twttAdj.min(), :]
             oDict["fret"][j, 0:3] = ffacet[0, 5:8]
 
-        if out["echomap"] or out["echomapadj"]:
+        if out["echomap"] or out["echomapadj"] or out["echomapcolored"] or out["echomapgeoref"]:
             oDict["emap"][:, j] = np.bincount(
                 cti, weights=pwr * (twtt ** 4), minlength=oDict["emap"].shape[0]
             )
@@ -107,7 +107,7 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
                 fcalc[:,5],
                 fcalc[:,6],
                 fcalc[:,7],
-        
+
             )
             fcalc[:,5] =  mlon
             fcalc[:,6] =  mlat
@@ -267,6 +267,8 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
+        #
+        #cgram_center = (oDict["combined_center"] * (255.0 / oDict["combined_center"].max())).astype(np.uint8)
         '''
         #The following lines are needed to align the clutter sim with the drone GPR first return
         #TODO: move this parameter to a config file
@@ -277,9 +279,20 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         # Auto adjustment
         scaling = np.array(curve.curve)
         cgram = scaling[cgram] * 255
+        #cgram_center = scaling[cgram_center] * 255
+        #cgram_center = cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"])
+        #print("bitwise {}".format(cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"])))
+        #print(oDict["combined_center"])
+        print(oDict["combined"])
+        #print(oDict["combined_center"] == oDict["combined"])
+        print("cgram {}".format(cgram))
+        #print("cgram_center {}".format(cgram_center))
+        #print("arg cgrams {}".format(np.argwhere(cgram_center == cgram)))
+        #print("iargwhere bitwise {}".format(np.argwhere(np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"]))))
+        #cgram_center[cgram != cgram_center] = cgram[cgram != cgram_center] * 0.4
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
-        
+
         # Add in first return and nadir locations if requested
         if out["showfret"]:
             frvalid = nvalid[:]
@@ -287,6 +300,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             for i in range(len(fbin)):
                 b = fbin[i]
                 if not np.isnan(b) and abs(b) < confDict["simParams"]["tracesamples"] :
+                   # print("This is line", inspect.currentframe().f_lineno)
                     cstack[b, [i]] = frColor
 
         if out["shownadir"]:
@@ -302,7 +316,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             cgram_center = cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_sides"] == oDict["combined"])
             cgram_center[cgram != cgram_center] = cgram[cgram != cgram_center] * 0.4
             cstack = np.dstack((cgram_center, cgram, cgram_center)).astype("uint8")
-        
+
             cimg = Image.fromarray(cstack)
             cimg = cimg.convert("RGB")
             cimg.save(confDict["paths"]["outpath"] + "combinedColored.png")
@@ -332,6 +346,8 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomap.png")
+
+    if out["echomapgeoref"]:
         with rasterio.open(
             confDict["paths"]["outpath"] + "echomap.tif",
             "w",
@@ -343,10 +359,26 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             crs=dem.crs,
             transform=oDict["emap_ref_xform"],
         ) as dst:
+            '''
             dst.write_band(
                 1,
                 np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(np.float32),
-            )
+            )'''
+            num = oDict["emap_ref"].astype(np.float32)
+            den = oDict["emap_ref_count"].astype(np.float32)
+
+            # Replace zeros with NaN to avoid division errors
+            safe_den = np.where(den == 0, np.nan, den)
+            ratio = num / safe_den
+
+            # Take log10
+            log_result = np.log10(ratio)
+
+            # Replace nan/inf with something safe (e.g., 0)
+            log_result = np.nan_to_num(log_result, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+
+            dst.write_band(1, log_result)
+
     if out["echomapadj"]:
         # Resize
         emap = oDict["emap"]
@@ -384,31 +416,13 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             estack[fri, i] = frColor
             estack[estack.shape[0] // 2, i] = nColor
 
-
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomapAdj.png")
-        
-        '''
-        egram_color1 = np.copy(egram)
-        egram_color2 = np.copy(egram)
-        egram_color3 = np.copy(egram)
-        print(egram.shape)
-        print(egram_angles.shape)
-        x = (egram_angles / 3) % 2 < 1 
-        print(x.shape)
-        print(egram_angles)
-        angle = 5
-        shift = 2.5
-        egram_color1[(((egram_angles / 12) + shift)  / angle) % 2 < 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 < 1] * 0.7
-        #egram_color2[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.7
-        egram_color3 = egram  * 0.7#[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / 12) + shift)  / angle) % 2 >= 1] * 0.6
-        estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
-        estack = np.dstack((egram, egram, egram)).astype(np.uint8)
-        '''
+
         if out["echomapcolored"]:
-            angle = 3
-            shift = angle/2
+            swathAngle = float(confDict["simParams"]["swathangle"])
+            shift = swathAngle / 2
             nColor = [0, 255, 0]
             facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4 # print(egram_angles/12)
             print(egram_angles.shape)
@@ -417,13 +431,13 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             print(confDict["facetParams"]["atstep"])
             print(facets_per_bin)
             egram_color1 = np.copy(egram)
-            egram_color1[(((egram_angles / facets_per_bin) + shift)  / angle) % 2 >= 1] = egram[(((egram_angles / facets_per_bin) + shift)  / angle) % 2 >= 1] * 0.7
+            egram_color1[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] = egram[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] * 0.7
             egram_color2 = np.copy(egram)
             egram_color2[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
             egram_color3 = egram  * 0.7
             egram_color3[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
             estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
-         
+
             for i in range(egram.shape[1]):
                 fri = frgram[:, i] > 0
                 estack[fri, i] = frColor
@@ -433,4 +447,4 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             eimg = Image.fromarray(estack)
             eimg = eimg.convert("RGB")
             eimg.save(confDict["paths"]["outpath"] + "echomapColored.png")
-        
+

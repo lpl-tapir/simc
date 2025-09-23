@@ -29,7 +29,7 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
-   
+
     demCrs = dem.crs
     try:
         xform = pyproj.transformer.Transformer.from_crs(
@@ -39,7 +39,6 @@ def main():
     except:
         print("reading dem crs failed, setting crs to xform manually")
         #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
-        #demCrs = "+proj=longlat +datum=WGS84 +no_defs" #drone
         demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
         #demCrs = "+proj=longlat +R=3396190 +no_defs" # Use the following line for CTX DEM
         xform = pyproj.transformer.Transformer.from_crs(
@@ -72,7 +71,7 @@ def main():
 
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))
-    
+
     for i in range(nav.shape[0]):
         fcalc = sim.sim(confDict, dem, nav,  xform, demData, win, i)
         #fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
@@ -82,6 +81,8 @@ def main():
         # Putting things back in order
         oi = np.where(inv == i)[0]
         output.build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi)
+        print(".", end="")
+        sys.stdout.flush()
 
     nav = nav.iloc[inv, :].reset_index()
     output.save(confDict, oDict, nav, dem, demData, demCrs, win)
