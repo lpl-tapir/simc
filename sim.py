@@ -36,10 +36,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     else:
         # Transform to dem CRS and sample DEM
         gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
-        '''
-        print("gx: {}".format(gx))
-        print("gy: {}".format(gy))
-        print("gz: {}".format(gz))'''
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -221,10 +217,9 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
         #the effect of power decay between the nadir point and off-nadir reflectors, governed by the
         #inverse square law, is negligible. In the case of DGPR, most of the power is reflected at the
         #closest point since the flight altitude (< 10 m) is much smaller than the time window in free space (~ 100 m)
-
-        #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 1.5), np.percentile(fcalc[:, 0], 98.5))
-        fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.25), np.percentile(fcalc[:, 0], 99.75)) #2 color works
-        #fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], 0.4), np.percentile(fcalc[:, 0], 99.6))
+        clip_percentile = 0.25
+        lower_clip_percentile, upper_clip_percentile = clip_percentile, 100-clip_percentile
+        fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], lower_clip_percentile), np.percentile(fcalc[:, 0], upper_clip_percentile))
 
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
@@ -433,15 +428,11 @@ def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center
     """
     theta = calc_angle(-px, -py, -pz, -rx, -ry, -rz)
 
-    '''
     # obtaining the center of the plane from one of the corners of a facet in the center
-    center_facet_index = int(f.shape[0]/(atDist*2/atStep))-1
-    print("center_facet_index {}".format(center_facet_index))
-    print(f[center_facet_index])
-    '''
     cmx = mx - center_plane[0]
     cmy = my - center_plane[1]
     cmz = mz - center_plane[2]
+
     # The following lines are just to print the fret and nadir coordinates in a specific CRS
     '''
     print("center plane {}".format(center_plane))
@@ -466,12 +457,6 @@ def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center
     '''
     phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
     phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
-    '''
-    print("ua {}".format(ua))
-    print(cx)
-    print(cy)
-    print(cz)
-    '''
     return theta, phi
 
 '''
@@ -496,12 +481,8 @@ def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
 
     ctSteps = ctDist/ctStep
     atSteps = atDist/atStep
-    #center_facet_index = int(f.shape[0]/((ctDist/ctStep)atDist*2/atStep))-1
     center_facet_index = int(ctSteps*atSteps+ctSteps-1)
-    #print("center_facet_index {}".format(center_facet_index))
-    #print(f[center_facet_index])
     cx = f[center_facet_index, 3]
     cy = f[center_facet_index, 4]
     cz = f[center_facet_index, 5]
     return [cx, cy, cz]
-

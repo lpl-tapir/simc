@@ -92,8 +92,6 @@ def readConfig(argDict):
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
         sys.exit(1)
-    print(confDict)
-    print("#################################################")
     if not os.path.exists(confDict["paths"]["dempath"]):
         print("Invalid path to DEM file - file does not exist.")
         sys.exit(1)
@@ -160,7 +158,7 @@ def readConfig(argDict):
         print("Invalid value for simParams:deminterp")
         print('Must be "True" or "False"')
         sys.exit(1)
-    #'''
+
     # Check that facet extent and dimensions are legal
     if confDict["facetParams"]["atdist"] < confDict["facetParams"]["atstep"]:
         print("Invalid config file param.")
@@ -181,7 +179,7 @@ def readConfig(argDict):
         print("Invalid config file param")
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
-    #'''
+
     # Determine internal xyz and spherical coordinate systems (IAU 2000)
     xyzD = {
         "mars": "+proj=geocent +R=3396190 +no_defs", #used for CTX

@@ -28,7 +28,11 @@ def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
     # This cannot go in prep because it needs dem window information
     # Add echo power map ref if necessary
     if "emap_ref" not in oDict.keys():
-        scale = 8
+        scale = 2
+        # Needed to add an adaptive scale range due to the difference in raster size
+        if (win.height // 8 >= 300) and (win.width // 8 >= 300):
+            scale = 8
+
         oDict["emap_ref"] = np.zeros(
             (win.height // scale + 1, win.width // scale + 1)
         )  # georeferenced echo power map
@@ -267,8 +271,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
 
     if out["combinedadj"]:
         cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
-        #
-        #cgram_center = (oDict["combined_center"] * (255.0 / oDict["combined_center"].max())).astype(np.uint8)
         '''
         #The following lines are needed to align the clutter sim with the drone GPR first return
         #TODO: move this parameter to a config file
@@ -279,19 +281,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         # Auto adjustment
         scaling = np.array(curve.curve)
         cgram = scaling[cgram] * 255
-        #cgram_center = scaling[cgram_center] * 255
-        #cgram_center = cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"])
-        #print("bitwise {}".format(cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"])))
-        #print(oDict["combined_center"])
-        print(oDict["combined"])
-        #print(oDict["combined_center"] == oDict["combined"])
-        print("cgram {}".format(cgram))
-        #print("cgram_center {}".format(cgram_center))
-        #print("arg cgrams {}".format(np.argwhere(cgram_center == cgram)))
-        #print("iargwhere bitwise {}".format(np.argwhere(np.bitwise_and(oDict["combined"] != 0, oDict["combined_center"] == oDict["combined"]))))
-        #cgram_center[cgram != cgram_center] = cgram[cgram != cgram_center] * 0.4
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
-
 
         # Add in first return and nadir locations if requested
         if out["showfret"]:
@@ -300,7 +290,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             for i in range(len(fbin)):
                 b = fbin[i]
                 if not np.isnan(b) and abs(b) < confDict["simParams"]["tracesamples"] :
-                   # print("This is line", inspect.currentframe().f_lineno)
                     cstack[b, [i]] = frColor
 
         if out["shownadir"]:
@@ -359,11 +348,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             crs=dem.crs,
             transform=oDict["emap_ref_xform"],
         ) as dst:
-            '''
-            dst.write_band(
-                1,
-                np.log10(oDict["emap_ref"] / oDict["emap_ref_count"]).astype(np.float32),
-            )'''
             num = oDict["emap_ref"].astype(np.float32)
             den = oDict["emap_ref_count"].astype(np.float32)
 
@@ -374,7 +358,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             # Take log10
             log_result = np.log10(ratio)
 
-            # Replace nan/inf with something safe (e.g., 0)
+            # Replace nan/inf with something safe (0)
             log_result = np.nan_to_num(log_result, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
             dst.write_band(1, log_result)
@@ -388,7 +372,6 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
         yDim = np.floor(emap.shape[0] * ySquish).astype(np.int32) + 1
-        print(yDim)
         idx = np.arange(0, emap.shape[0])
         nidx = np.floor(idx * ySquish).astype(np.int32)
         egram = np.zeros((yDim, emap.shape[1]))
@@ -424,12 +407,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
             swathAngle = float(confDict["simParams"]["swathangle"])
             shift = swathAngle / 2
             nColor = [0, 255, 0]
-            facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4 # print(egram_angles/12)
-            print(egram_angles.shape)
-            print(emap_angles.shape)
-            print(confDict["facetParams"]["atdist"])
-            print(confDict["facetParams"]["atstep"])
-            print(facets_per_bin)
+            facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4
             egram_color1 = np.copy(egram)
             egram_color1[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] = egram[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] * 0.7
             egram_color2 = np.copy(egram)

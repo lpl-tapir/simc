@@ -37,10 +37,8 @@ def main():
         )
         print(xform)
     except:
-        print("reading dem crs failed, setting crs to xform manually")
-        #Use the following line in cases when dem.crs fails, i.e. EPSG: 4326 or CRS of CTX DEMs
-        demCrs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" #drone
-        #demCrs = "+proj=longlat +R=3396190 +no_defs" # Use the following line for CTX DEM
+        print("xfrom from dem crs failed, setting crs to xform from navsys in config file")
+        demCrs = confDict["navigation"]["navsys"]
         xform = pyproj.transformer.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], demCrs
         )
