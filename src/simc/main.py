@@ -27,26 +27,32 @@ def main():
 
     with open(confDict["paths"]["logpath"], "w") as fd:
         fd.write(
-            "University of Arizona Clutter Simulator Log File\nVersion %.1f\n" % version
+            "University of Arizona Clutter Simulator Log File\nVersion %.1f\n"
+            % version
         )
         pprint.pprint(confDict, stream=fd)
 
     demCrs = dem.crs
+
     try:
         xform = pyproj.transformer.Transformer.from_crs(
-            confDict["navigation"]["xyzsys"], demCrs
+            confDict["navigation"]["xyzsys"],
+            demCrs,
+            always_xy=True,
         )
-        print(xform)
     except:
         print(
             "xfrom from dem crs failed, setting crs to xform from navsys in config file"
         )
         demCrs = confDict["navigation"]["navsys"]
         xform = pyproj.transformer.Transformer.from_crs(
-            confDict["navigation"]["xyzsys"], demCrs
+            confDict["navigation"]["xyzsys"],
+            demCrs,
+            always_xy=True,
         )
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
+
     bounds = prep.calcBounds(
         confDict,
         dem,
@@ -56,6 +62,8 @@ def main():
         confDict["facetParams"]["atdist"],
         confDict["facetParams"]["ctdist"],
     )
+
+    print("bounds", bounds)
 
     rowSub = (bounds[2], bounds[3] + 1)
     colSub = (bounds[0], bounds[1] + 1)
@@ -74,7 +82,9 @@ def main():
         fd.write("Simulating %d traces\n" % len(nav))
 
     for i in range(nav.shape[0]):
-        fcalc = sim.sim(confDict, dem, nav, xform, demData, win, i)
+        fcalc = sim.sim(
+            confDict, dem, nav, xform, demData, win, i
+        )
         # fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
         if fcalc.shape[0] == 0:
             continue
@@ -96,12 +106,17 @@ def main():
         sys.stdout.flush()
 
     nav = nav.iloc[inv, :].reset_index()
-    output.save(confDict, oDict, nav, dem, demData, demCrs, win)
+    output.save(
+        confDict, oDict, nav, dem, demData, demCrs, win
+    )
     dem.close()
 
     stopTime = time.time()
     with open(confDict["paths"]["logpath"], "a") as fd:
-        fd.write("Wall clock runtime: %.2fs" % (stopTime - startTime))
+        fd.write(
+            "Wall clock runtime: %.2fs"
+            % (stopTime - startTime)
+        )
 
 
 # execute only if run as a script.

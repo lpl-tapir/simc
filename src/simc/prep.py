@@ -181,13 +181,16 @@ def calcBounds(
             (gx, gy, gz), axis=1
         )
 
-    demX, demY, demZ = pyproj.transform(
-        xyzsys,
-        demCrs,
+    xform = pyproj.Transformer.from_crs(
+        xyzsys, demCrs, always_xy=True
+    )
+
+    demX, demY, demZ = xform.transform(
         corners[:, 0],
         corners[:, 1],
         corners[:, 2],
     )
+
     gt = ~dem.transform
     print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)

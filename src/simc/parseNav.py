@@ -17,7 +17,6 @@ from simc import parseNav
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-# areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
 areoidPath = "../dem/mega_128ppd.tif"
 # areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
 
@@ -125,6 +124,7 @@ def GetNav_DJI(navfile, navsys, xyzsys):
         df["hgt"].to_numpy(),
     )
     df["datum"] = 0 * df["x"]
+
     return df[["x", "y", "z", "datum"]]
 
 

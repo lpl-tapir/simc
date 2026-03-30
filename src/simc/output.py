@@ -224,7 +224,7 @@ def save(confDict, oDict, nav, dem, demData, demCrs, win):
         ix = ix.astype(np.int32)
         iy = iy.astype(np.int32)
 
-        nvalid = np.ones(ix.shape).astype(np.bool)
+        nvalid = np.ones(ix.shape).astype(bool)
         demz = np.zeros(ix.shape).astype(np.float32)
 
         # If dembump turned on, fix off dem values
