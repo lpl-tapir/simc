@@ -1,12 +1,14 @@
+import pprint
 import sys
-import ingest, prep, sim, output
-import rasterio as rio
+import time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pprint
 import pyproj
-import time
-import matplotlib.pyplot as plt
+import rasterio as rio
+
+from simc import ingest, output, prep, sim
 
 
 def main():
@@ -29,7 +31,6 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
-
     demCrs = dem.crs
     try:
         xform = pyproj.transformer.Transformer.from_crs(
@@ -37,7 +38,9 @@ def main():
         )
         print(xform)
     except:
-        print("xfrom from dem crs failed, setting crs to xform from navsys in config file")
+        print(
+            "xfrom from dem crs failed, setting crs to xform from navsys in config file"
+        )
         demCrs = confDict["navigation"]["navsys"]
         xform = pyproj.transformer.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], demCrs
@@ -71,14 +74,24 @@ def main():
         fd.write("Simulating %d traces\n" % len(nav))
 
     for i in range(nav.shape[0]):
-        fcalc = sim.sim(confDict, dem, nav,  xform, demData, win, i)
-        #fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
+        fcalc = sim.sim(confDict, dem, nav, xform, demData, win, i)
+        # fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
         if fcalc.shape[0] == 0:
             continue
 
         # Putting things back in order
         oi = np.where(inv == i)[0]
-        output.build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi)
+        output.build(
+            confDict,
+            oDict,
+            fcalc,
+            dem,
+            win,
+            xform,
+            nav,
+            i,
+            oi,
+        )
         print(".", end="")
         sys.stdout.flush()
 

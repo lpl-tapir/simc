@@ -1,7 +1,8 @@
+import sys
+
 import numpy as np
 import pyproj
 import rasterio as rio
-import sys
 import scipy
 
 
@@ -17,25 +18,44 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     gt = ~dem.window_transform(win)
 
     # Generate grid in xyz space
-    gx, gy, gz = genGrid(nav, ctNum, atNum, atStep, ctStep, i)
+    gx, gy, gz = genGrid(
+        nav, ctNum, atNum, atStep, ctStep, i
+    )
 
     if confDict["simParams"]["deminterp"]:
         xres = (~gt)[0]
         yres = (~gt)[4]
         if xres != -yres:
-            print("Not able to handle DEM interpolation when xres != yres")
+            print(
+                "Not able to handle DEM interpolation when xres != yres"
+            )
             sys.exit(1)
 
         demStep = np.sqrt(2) * xres
-        atNumCoarse = np.ceil(atDist / demStep).astype(np.int32)
-        ctNumCoarse = np.ceil(ctDist / demStep).astype(np.int32)
-        gxC, gyC, gzC = genGrid(nav, ctNumCoarse, atNumCoarse, demStep, demStep, i)
+        atNumCoarse = np.ceil(atDist / demStep).astype(
+            np.int32
+        )
+        ctNumCoarse = np.ceil(ctDist / demStep).astype(
+            np.int32
+        )
+        gxC, gyC, gzC = genGrid(
+            nav,
+            ctNumCoarse,
+            atNumCoarse,
+            demStep,
+            demStep,
+            i,
+        )
 
         # Transform coarse grid to dem CRS
-        gtx, gty, gtz = xform.transform(gxC, gyC, gzC, direction="FORWARD")
+        gtx, gty, gtz = xform.transform(
+            gxC, gyC, gzC, direction="FORWARD"
+        )
     else:
         # Transform to dem CRS and sample DEM
-        gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+        gtx, gty, gtz = xform.transform(
+            gx, gy, gz, direction="FORWARD"
+        )
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -48,9 +68,13 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     # If dembump turned on, fix off dem values
     if confDict["simParams"]["dembump"]:
         ix[ix < 0] = 0
-        ix[ix > (demData.shape[1] - 1)] = demData.shape[1] - 1
+        ix[ix > (demData.shape[1] - 1)] = (
+            demData.shape[1] - 1
+        )
         iy[iy < 0] = 0
-        iy[iy > (demData.shape[0] - 1)] = demData.shape[0] - 1
+        iy[iy > (demData.shape[0] - 1)] = (
+            demData.shape[0] - 1
+        )
     else:
         valid[ix < 0] = 0
         valid[ix > (demData.shape[1] - 1)] = 0
@@ -68,13 +92,18 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         gtyC = gty[:]
 
         # Fine grid in DEM CRS
-        gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
+        gtx, gty, gtz = xform.transform(
+            gx, gy, gz, direction="FORWARD"
+        )
 
         xords = np.stack((gtxC, gtyC), axis=1)
         xordsQ = np.stack((gtx, gty), axis=1)
 
         demz = scipy.interpolate.griddata(
-            xords[valid], demz[valid], xordsQ, method="cubic"
+            xords[valid],
+            demz[valid],
+            xordsQ,
+            method="cubic",
         )
 
         valid = np.ones(demz.shape).astype(np.bool)
@@ -85,7 +114,9 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     if np.sum(valid) == 0:
         return np.array([])
     # Transform back to xyz for facet calcs
-    sx, sy, sz = xform.transform(gtx, gty, demz, direction="INVERSE")
+    sx, sy, sz = xform.transform(
+        gtx, gty, demz, direction="INVERSE"
+    )
 
     shape = (2 * int(atNum) + 1, 2 * int(ctNum) + 1)
     sx = np.reshape(sx, shape)
@@ -96,9 +127,11 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
 
-    center_plane = None  
+    center_plane = None
     if confDict["simParams"]["centerplane"]:
-        center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
+        center_plane = get_center_coordinates_plane(
+            facets, atDist, atStep, ctDist, ctStep
+        )
 
     fcalc = calcFacetsFriis(
         i,
@@ -109,12 +142,19 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         nav["uv"][i],
         center_plane,
         confDict["simParams"]["speedlight"],
-        confDict["simParams"]["antenna_pattern"]
+        confDict["simParams"]["antenna_pattern"],
     )
 
-    if confDict["simParams"]["antenna_pattern"] == "half_wave_dipole": #used for drone GPR only 
-        #print("!!! Applying half wave dipole gain !!!")
-        fcalc = half_wave_dipole_gain(fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i])
+    if (
+        confDict["simParams"]["antenna_pattern"]
+        == "half_wave_dipole"
+    ):  # used for drone GPR only
+        # print("!!! Applying half wave dipole gain !!!")
+        fcalc = half_wave_dipole_gain(
+            fcalc,
+            (nav["x"][i], nav["y"][i], nav["z"][i]),
+            nav["uv"][i],
+        )
 
     return fcalc
 
@@ -141,7 +181,8 @@ def half_wave_dipole_gain(fcalc, xant, uant):
 
     # Find sin/cos of angle between dipole axis and vector to facet for dipole antenna pattern calc
     c = np.dot(fcalc_wrk[:, 5:8], uant) / (
-        np.linalg.norm(fcalc_wrk[:, 5:8], axis=1) * np.linalg.norm(uant)
+        np.linalg.norm(fcalc_wrk[:, 5:8], axis=1)
+        * np.linalg.norm(uant)
     )  # cosine of angle
     s = np.sqrt(1 - c**2)  # sine of angle
 
@@ -156,7 +197,9 @@ def half_wave_dipole_gain(fcalc, xant, uant):
     return fcalc
 
 
-def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
+def calcFacetsFriis(
+    i, f, px, py, pz, ua, center_plane, c, antenna_pattern
+):
     # Calculate return power and twtt for facets
     # Based on modified Friis transmission equation
     # explained in Choudhary, Holt, Kempf 2016
@@ -182,11 +225,24 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     ry = py - my
     rz = pz - mz
 
-    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    r = np.sqrt(rx**2 + ry**2 + rz**2)
 
     if center_plane != None:
         # Calculate angles of return
-        theta, phi = calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane)
+        theta, phi = calculate_angles_of_return(
+            f,
+            px,
+            py,
+            pz,
+            rx,
+            ry,
+            rz,
+            mx,
+            my,
+            mz,
+            ua,
+            center_plane,
+        )
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -199,27 +255,45 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     f[:, 2] = f[:, 8] - f[:, 2]  # z
     # Calc cross product
     f[:, 6:9] = np.cross(f[:, 3:6], f[:, 0:3])
-    area = np.sqrt(f[:, 6] ** 2 + f[:, 7] ** 2 + f[:, 8] ** 2) / 2
+    area = (
+        np.sqrt(f[:, 6] ** 2 + f[:, 7] ** 2 + f[:, 8] ** 2)
+        / 2
+    )
 
     ## Calc power
     # Dot product between facet center -> platform and normal to facet
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+    fcalc[:, 0] = np.abs(
+        ((area * ct) ** 2) / (r**4)
+    )  # power
 
-    if antenna_pattern == "half_wave_dipole": #used for drone GPR only
-        #Using clip and percentile to avoid extreme values; without clipping the clutter simulations saturate and only the
-        #surface is visible. Further explanation from from Aguilar et al. (2025):
-        #One difference in the clutter simulations between orbital and drone-borne sounding
-        #radar is power decay between nadir and off-nadir. In the case of an orbiter like SHARAD, the
-        #spacecraft height (300 km) is greater than the time window in free space (40 km). Therefore,
-        #the effect of power decay between the nadir point and off-nadir reflectors, governed by the
-        #inverse square law, is negligible. In the case of DGPR, most of the power is reflected at the
-        #closest point since the flight altitude (< 10 m) is much smaller than the time window in free space (~ 100 m)
+    if (
+        antenna_pattern == "half_wave_dipole"
+    ):  # used for drone GPR only
+        # Using clip and percentile to avoid extreme values; without clipping the clutter simulations saturate and only the
+        # surface is visible. Further explanation from from Aguilar et al. (2025):
+        # One difference in the clutter simulations between orbital and drone-borne sounding
+        # radar is power decay between nadir and off-nadir. In the case of an orbiter like SHARAD, the
+        # spacecraft height (300 km) is greater than the time window in free space (40 km). Therefore,
+        # the effect of power decay between the nadir point and off-nadir reflectors, governed by the
+        # inverse square law, is negligible. In the case of DGPR, most of the power is reflected at the
+        # closest point since the flight altitude (< 10 m) is much smaller than the time window in free space (~ 100 m)
         clip_percentile = 0.25
-        lower_clip_percentile, upper_clip_percentile = clip_percentile, 100-clip_percentile
-        fcalc[:, 0] = np.clip(fcalc[:,0], np.percentile(fcalc[:, 0], lower_clip_percentile), np.percentile(fcalc[:, 0], upper_clip_percentile))
+        lower_clip_percentile, upper_clip_percentile = (
+            clip_percentile,
+            100 - clip_percentile,
+        )
+        fcalc[:, 0] = np.clip(
+            fcalc[:, 0],
+            np.percentile(
+                fcalc[:, 0], lower_clip_percentile
+            ),
+            np.percentile(
+                fcalc[:, 0], upper_clip_percentile
+            ),
+        )
 
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
@@ -227,7 +301,9 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     fcalc[:, 5] = mx  # Facet centers
     fcalc[:, 6] = my
     fcalc[:, 7] = mz
-    fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
+    fcalc[:, 8] = f[
+        :, 11
+    ]  # Cross track indices for echo power map
     if center_plane != None:
         fcalc[:, 9] = theta
         fcalc[:, 10] = phi
@@ -236,7 +312,9 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
 
 def genGrid(nav, ctNum, atNum, atStep, ctStep, i):
     # Generate XYZ grid
-    ua = nav["uv"][i] * atStep  # along track vector (forward)
+    ua = (
+        nav["uv"][i] * atStep
+    )  # along track vector (forward)
     uc = nav["ul"][i] * ctStep  # cross track vector (right)
 
     # Use meshgrid to come up with vectors to grid points
@@ -290,7 +368,7 @@ def calcFacets(f, px, py, pz, c):
     ry = py - my
     rz = pz - mz
 
-    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
+    r = np.sqrt(rx**2 + ry**2 + rz**2)
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -303,21 +381,28 @@ def calcFacets(f, px, py, pz, c):
     f[:, 2] = f[:, 8] - f[:, 2]  # z
     # Calc cross product
     f[:, 6:9] = np.cross(f[:, 3:6], f[:, 0:3])
-    area = np.sqrt(f[:, 6] ** 2 + f[:, 7] ** 2 + f[:, 8] ** 2) / 2
+    area = (
+        np.sqrt(f[:, 6] ** 2 + f[:, 7] ** 2 + f[:, 8] ** 2)
+        / 2
+    )
 
     ## Calc power
     # Dot product between facet center -> platform and normal to facet
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
+    fcalc[:, 0] = np.abs(
+        ((area * ct) ** 2) / (r**4)
+    )  # power
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
     fcalc[:, 5] = mx  # Facet centers
     fcalc[:, 6] = my
     fcalc[:, 7] = mz
-    fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
+    fcalc[:, 8] = f[
+        :, 11
+    ]  # Cross track indices for echo power map
 
     return fcalc
 
@@ -374,7 +459,12 @@ def genFacets(s, valid):
         slice((w + 1) // 2, w),
     ]
 
-    lstSlices = [slice(0, qt), slice(qt, hf), slice(hf, tq), slice(tq, nfacet)]
+    lstSlices = [
+        slice(0, qt),
+        slice(qt, hf),
+        slice(hf, tq),
+        slice(tq, nfacet),
+    ]
 
     for i in range(4):
         for j in range(3):
@@ -411,8 +501,9 @@ def genFacets(s, valid):
     return f[fkeep]
 
 
-def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane):
-
+def calculate_angles_of_return(
+    f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane
+):
     """
     Calculate the angles of return (theta and phi) for each facet
 
@@ -434,7 +525,7 @@ def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center
     cmz = mz - center_plane[2]
 
     # The following lines are just to print the fret and nadir coordinates in a specific CRS
-    '''
+    """
     print("center plane {}".format(center_plane))
     lon, lat, elev = pyproj.transform(
         "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #"+proj=geocent +a=1737400 +b=1737400 +no_defs",
@@ -454,34 +545,46 @@ def calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center
     print("spacecraft lat: {} lon: {} elev: {} ".format(lat, lon,elev))
     print("max {} {} {}".format(np.max(cmx), np.max(cmy), np.max(cmz)))
     print("min {} {} {}".format(np.min(cmx), np.min(cmy), np.min(cmz)))
-    '''
-    phi =  calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
-    phi[f[:,10] == 0] = 360 - phi[f[:,10] == 0]
+    """
+    phi = calc_angle(ua[0], ua[1], ua[2], cmx, cmy, cmz)
+    phi[f[:, 10] == 0] = 360 - phi[f[:, 10] == 0]
     return theta, phi
 
-'''
+
+"""
 Parameters
 ---------------
 rx: array of x components of the radii vector to the center of each facet
 ry: array of y components of the radii vector to the center of each facet
 rz: array of z components of the radii vector to the center of each facet
-'''
+"""
+
+
 def calc_angle(vx_p, vy_p, vz_p, vx_a, vy_a, vz_a):
 
-    #calc lenght of both vectors
-    mag1 = np.sqrt(vx_p ** 2 + vy_p ** 2 + vz_p ** 2)
-    mag2 = np.sqrt(vx_a ** 2 + vy_a ** 2 + vz_a ** 2)
+    # calc lenght of both vectors
+    mag1 = np.sqrt(vx_p**2 + vy_p**2 + vz_p**2)
+    mag2 = np.sqrt(vx_a**2 + vy_a**2 + vz_a**2)
 
-    dot_product = ( vx_p * vx_a ) + ( vy_p * vy_a ) + ( vz_p * vz_a )
-    return  np.degrees(np.arccos(dot_product/(mag1 * mag2)))
+    dot_product = (
+        (vx_p * vx_a) + (vy_p * vy_a) + (vz_p * vz_a)
+    )
+    return np.degrees(
+        np.arccos(dot_product / (mag1 * mag2))
+    )
 
-def get_center_coordinates_plane(f, atDist, atStep, ctDist, ctStep):
+
+def get_center_coordinates_plane(
+    f, atDist, atStep, ctDist, ctStep
+):
     # obtaining the center of the plane from one of the corners of a facet in the center
     # the corner 2 of the facet with the following index, is one of the 6 facets that contain the coordinates of the center of the plane
 
-    ctSteps = ctDist/ctStep
-    atSteps = atDist/atStep
-    center_facet_index = int(ctSteps*atSteps+ctSteps-1)
+    ctSteps = ctDist / ctStep
+    atSteps = atDist / atStep
+    center_facet_index = int(
+        ctSteps * atSteps + ctSteps - 1
+    )
     cx = f[center_facet_index, 3]
     cy = f[center_facet_index, 4]
     cz = f[center_facet_index, 5]

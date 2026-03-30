@@ -1,7 +1,9 @@
-import numpy as np
 import sys
+
+import numpy as np
 import pyproj
-import sim
+
+from simc import sim
 
 
 def findDupe(nav):
@@ -40,48 +42,101 @@ def prep(confDict, dem, nav):
 
     samps = confDict["simParams"]["tracesamples"]
     traces = len(nav)
-    if out["combined"] or out["combinedadj"] or out["binary"]:
-        oDict["combined"] = np.zeros((samps, traces)).astype(np.float64)
-        
+    if (
+        out["combined"]
+        or out["combinedadj"]
+        or out["binary"]
+    ):
+        oDict["combined"] = np.zeros(
+            (samps, traces)
+        ).astype(np.float64)
+
     if out["combinedcolored"] or out["echomapcolored"]:
-        oDict["combined_center"] = np.zeros((samps, traces)).astype(np.float64)
-        oDict["combined_sides"] = np.zeros((samps, traces)).astype(np.float64)
+        oDict["combined_center"] = np.zeros(
+            (samps, traces)
+        ).astype(np.float64)
+        oDict["combined_sides"] = np.zeros(
+            (samps, traces)
+        ).astype(np.float64)
 
     if out["left"]:
-        oDict["left"] = np.zeros((samps, traces)).astype(np.float64)
+        oDict["left"] = np.zeros((samps, traces)).astype(
+            np.float64
+        )
 
     if out["right"]:
-        oDict["right"] = np.zeros((samps, traces)).astype(np.float64)
-
-    if out["echomap"] or out["echomapadj"] or out["echomapcolored"] or out["echomapgeoref"]:
-        numCTfacets = int(
-            2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"]
+        oDict["right"] = np.zeros((samps, traces)).astype(
+            np.float64
         )
-        oDict["emap"] = np.zeros((numCTfacets + 1, traces)).astype(
+
+    if (
+        out["echomap"]
+        or out["echomapadj"]
+        or out["echomapcolored"]
+        or out["echomapgeoref"]
+    ):
+        numCTfacets = int(
+            2
+            * confDict["facetParams"]["ctdist"]
+            / confDict["facetParams"]["ctstep"]
+        )
+        oDict["emap"] = np.zeros(
+            (numCTfacets + 1, traces)
+        ).astype(
             np.float64
         )  # echo power
-        oDict["emap_angles"] = np.zeros((numCTfacets + 1, traces)).astype(
+        oDict["emap_angles"] = np.zeros(
+            (numCTfacets + 1, traces)
+        ).astype(
             np.float64
         )  # theta integrated along-track
-        oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(
+        oDict["frmap"] = np.zeros(
+            (numCTfacets + 1, traces)
+        ).astype(
             np.bool
         )  # first return
 
     if out["fret"] or out["showfret"]:
-        oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
+        oDict["fret"] = np.zeros((traces, 4)).astype(
+            np.float64
+        )
 
     numFacets = int(
-        2 * ( 2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"] ) * ( 2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
+        2
+        * (
+            2
+            * confDict["facetParams"]["ctdist"]
+            / confDict["facetParams"]["ctstep"]
+        )
+        * (
+            2
+            * confDict["facetParams"]["atdist"]
+            / confDict["facetParams"]["atstep"]
+        )
     )
 
     print("numFacets {}".format(numFacets))
-    oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
-    oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
-    oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
-    oDict["phi"] = np.zeros((traces, numFacets)).astype(np.float32)
-    oDict["mx"] = np.zeros((traces, numFacets)).astype(np.float32)
-    oDict["my"] = np.zeros((traces, numFacets)).astype(np.float32)
-    oDict["mz"] = np.zeros((traces, numFacets)).astype(np.float32)
+    oDict["pwr"] = np.zeros((traces, numFacets)).astype(
+        np.float64
+    )
+    oDict["twtt"] = np.zeros((traces, numFacets)).astype(
+        np.float64
+    )
+    oDict["theta"] = np.zeros((traces, numFacets)).astype(
+        np.float32
+    )
+    oDict["phi"] = np.zeros((traces, numFacets)).astype(
+        np.float32
+    )
+    oDict["mx"] = np.zeros((traces, numFacets)).astype(
+        np.float32
+    )
+    oDict["my"] = np.zeros((traces, numFacets)).astype(
+        np.float32
+    )
+    oDict["mz"] = np.zeros((traces, numFacets)).astype(
+        np.float32
+    )
     # Remove duplicate entries, calculate inverse
     nav, inv = findDupe(nav)
 
@@ -89,7 +144,7 @@ def prep(confDict, dem, nav):
     vx = np.gradient(nav["x"])
     vy = np.gradient(nav["y"])
     vz = np.gradient(nav["z"])
-    vMag = np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
+    vMag = np.sqrt(vx**2 + vy**2 + vz**2)
     v = np.stack((vx / vMag, vy / vMag, vz / vMag), axis=1)
     nav["uv"] = list(v)
 
@@ -97,49 +152,84 @@ def prep(confDict, dem, nav):
     cx = -nav["x"]
     cy = -nav["y"]
     cz = -nav["z"]
-    cMag = np.sqrt(cx ** 2 + cy ** 2 + cz ** 2)
+    cMag = np.sqrt(cx**2 + cy**2 + cz**2)
     c = np.stack((cx / cMag, cy / cMag, cz / cMag), axis=1)
 
     # Right pointing cross track vector
     l = np.cross(c, v)
-    lMag = np.sqrt(l[:, 0] ** 2 + l[:, 1] ** 2 + l[:, 2] ** 2)
-    nav["ul"] = list(l / np.stack((lMag, lMag, lMag), axis=1))
+    lMag = np.sqrt(
+        l[:, 0] ** 2 + l[:, 1] ** 2 + l[:, 2] ** 2
+    )
+    nav["ul"] = list(
+        l / np.stack((lMag, lMag, lMag), axis=1)
+    )
 
     return nav, oDict, inv
 
 
-def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
+def calcBounds(
+    confDict, dem, demCrs, nav, xyzsys, atDist, ctDist
+):
     corners = np.zeros((len(nav) * 9, 3))
 
     for i in range(len(nav)):
-        gx, gy, gz = sim.genGrid(nav, 1, 1, atDist, ctDist, i)
+        gx, gy, gz = sim.genGrid(
+            nav, 1, 1, atDist, ctDist, i
+        )
 
-        corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
+        corners[i * 9 : (i * 9) + 9, :] = np.stack(
+            (gx, gy, gz), axis=1
+        )
 
     demX, demY, demZ = pyproj.transform(
-        xyzsys, demCrs, corners[:, 0], corners[:, 1], corners[:, 2]
+        xyzsys,
+        demCrs,
+        corners[:, 0],
+        corners[:, 1],
+        corners[:, 2],
     )
     gt = ~dem.transform
     print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)
-    bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
-    
+    bounds = [
+        int(min(ix)),
+        int(max(ix)),
+        int(min(iy)),
+        int(max(iy)),
+    ]
+
     print(bounds)
     with open(confDict["paths"]["logpath"], "a") as fd:
         if bounds[0] < 0:
-            fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))
+            fd.write(
+                "Warning: min X off of DEM -> {}\n".format(
+                    bounds[0]
+                )
+            )
             bounds[0] = 0
 
         if bounds[1] > dem.width - 1:
-            fd.write("Warning: max X off of DEM -> {}\n".format(bounds[1]))
+            fd.write(
+                "Warning: max X off of DEM -> {}\n".format(
+                    bounds[1]
+                )
+            )
             bounds[1] = dem.width - 1
 
         if bounds[2] < 0:
-            fd.write("Warning: min y off of DEM -> {}\n".format(bounds[2]))
+            fd.write(
+                "Warning: min y off of DEM -> {}\n".format(
+                    bounds[2]
+                )
+            )
             bounds[2] = 0
 
         if bounds[3] > dem.height - 1:
-            fd.write("Warning: max y off of DEM -> {}\n".format(bounds[3]))
+            fd.write(
+                "Warning: max y off of DEM -> {}\n".format(
+                    bounds[3]
+                )
+            )
             bounds[3] = dem.height - 1
 
     return bounds

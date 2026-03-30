@@ -1,13 +1,22 @@
-import argparse, configparser, os, sys
-import numpy as np
-import parseNav
+import argparse
+import configparser
+import os
+import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+from simc import parseNav
 
 
 def parseCmd():
     # Build argparser and parse command line args
-    parser = argparse.ArgumentParser(description="Run a clutter simulation.")
-    parser.add_argument("confPath", help="Path to configuration file (.ini)")
+    parser = argparse.ArgumentParser(
+        description="Run a clutter simulation."
+    )
+    parser.add_argument(
+        "confPath", help="Path to configuration file (.ini)"
+    )
     parser.add_argument(
         "-n",
         dest="navPath",
@@ -56,7 +65,9 @@ def readConfig(argDict):
     """
     # Check that config file path is valid
     if not os.path.exists(argDict["confPath"]):
-        print("Invalid path to config file - file does not exist.")
+        print(
+            "Invalid path to config file - file does not exist."
+        )
         sys.exit(1)
 
     config = configparser.ConfigParser()
@@ -69,7 +80,8 @@ def readConfig(argDict):
         sys.exit(1)
 
     confDict = {
-        section: dict(config.items(section)) for section in config.sections()
+        section: dict(config.items(section))
+        for section in config.sections()
     }  # Dict of config file.
 
     # Substitute in command line args if necessary
@@ -83,31 +95,43 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
-    if confDict["paths"]["sigpath"].strip() not in (None, ''):
+    if confDict["paths"]["sigpath"].strip() not in (
+        None,
+        "",
+    ):
         confDict["simParams"]["coherent"] = True
     else:
         confDict["simParams"]["coherent"] = False
 
     # Check that nav, out, and dem paths are valid
     if not os.path.exists(confDict["paths"]["navpath"]):
-        print("Invalid path to navigation file - file does not exist.")
+        print(
+            "Invalid path to navigation file - file does not exist."
+        )
         sys.exit(1)
     if not os.path.exists(confDict["paths"]["dempath"]):
-        print("Invalid path to DEM file - file does not exist.")
+        print(
+            "Invalid path to DEM file - file does not exist."
+        )
         sys.exit(1)
 
     if not os.path.exists(confDict["paths"]["outpath"]):
-        print("Invalid path to output files - folder does not exist.")
+        print(
+            "Invalid path to output files - folder does not exist."
+        )
         sys.exit(1)
 
     if confDict["simParams"]["coherent"]:
         if not os.path.exists(confDict["paths"]["sigpath"]):
-            print("Invalid path to signal file - file does not exist.")
+            print(
+                "Invalid path to signal file - file does not exist."
+            )
             sys.exit(1)
 
         # Load signal to use for coherent simulation
         confDict["simParams"]["signal"] = np.loadtxt(
-            confDict["paths"]["sigpath"], dtype=np.complex128
+            confDict["paths"]["sigpath"],
+            dtype=np.complex128,
         )
 
     # Make output prefix
@@ -116,26 +140,51 @@ def readConfig(argDict):
 
     navfile = confDict["paths"]["navpath"].split("/")[-1]
     navname = navfile.split(".")[0]
-    confDict["paths"]["outpath"] = confDict["paths"]["outpath"] + navname + "_"
+    confDict["paths"]["outpath"] = (
+        confDict["paths"]["outpath"] + navname + "_"
+    )
 
     # Set log file path
-    confDict["paths"]["logpath"] = confDict["paths"]["outpath"] + "simLog.txt"
+    confDict["paths"]["logpath"] = (
+        confDict["paths"]["outpath"] + "simLog.txt"
+    )
 
     # Assign correct data types for non-string config items
-    confDict["simParams"]["speedlight"] = float(confDict["simParams"]["speedlight"])
-    confDict["simParams"]["dt"] = float(confDict["simParams"]["dt"])
-    confDict["simParams"]["tracesamples"] = int(confDict["simParams"]["tracesamples"])
+    confDict["simParams"]["speedlight"] = float(
+        confDict["simParams"]["speedlight"]
+    )
+    confDict["simParams"]["dt"] = float(
+        confDict["simParams"]["dt"]
+    )
+    confDict["simParams"]["tracesamples"] = int(
+        confDict["simParams"]["tracesamples"]
+    )
 
-    confDict["facetParams"]["atdist"] = float(confDict["facetParams"]["atdist"])
-    confDict["facetParams"]["ctdist"] = float(confDict["facetParams"]["ctdist"])
-    confDict["facetParams"]["atstep"] = float(confDict["facetParams"]["atstep"])
-    confDict["facetParams"]["ctstep"] = float(confDict["facetParams"]["ctstep"])
+    confDict["facetParams"]["atdist"] = float(
+        confDict["facetParams"]["atdist"]
+    )
+    confDict["facetParams"]["ctdist"] = float(
+        confDict["facetParams"]["ctdist"]
+    )
+    confDict["facetParams"]["atstep"] = float(
+        confDict["facetParams"]["atstep"]
+    )
+    confDict["facetParams"]["ctstep"] = float(
+        confDict["facetParams"]["ctstep"]
+    )
 
-    boolDict = {"true": True, "t": True, "false": False, "f": False}
+    boolDict = {
+        "true": True,
+        "t": True,
+        "false": False,
+        "f": False,
+    }
 
     for key in confDict["outputs"].keys():
         if confDict["outputs"][key].lower() in boolDict:
-            confDict["outputs"][key] = boolDict[confDict["outputs"][key].lower()]
+            confDict["outputs"][key] = boolDict[
+                confDict["outputs"][key].lower()
+            ]
         else:
             print("Invalid value for outputs:" + key)
             print('Must be "True" or "False"')
@@ -150,7 +199,10 @@ def readConfig(argDict):
         print('Must be "True" or "False"')
         sys.exit(1)
 
-    if confDict["simParams"]["deminterp"].lower() in boolDict:
+    if (
+        confDict["simParams"]["deminterp"].lower()
+        in boolDict
+    ):
         confDict["simParams"]["deminterp"] = boolDict[
             confDict["simParams"]["deminterp"].lower()
         ]
@@ -160,43 +212,55 @@ def readConfig(argDict):
         sys.exit(1)
 
     # Check that facet extent and dimensions are legal
-    if confDict["facetParams"]["atdist"] < confDict["facetParams"]["atstep"]:
+    if (
+        confDict["facetParams"]["atdist"]
+        < confDict["facetParams"]["atstep"]
+    ):
         print("Invalid config file param.")
         print("atdist must be greater than atstep")
         sys.exit(1)
 
-    if confDict["facetParams"]["ctdist"] < confDict["facetParams"]["ctstep"]:
+    if (
+        confDict["facetParams"]["ctdist"]
+        < confDict["facetParams"]["ctstep"]
+    ):
         print("Invalid config file param.")
         print("ctdist must be greater than ctstep")
         sys.exit(1)
 
-    if confDict["facetParams"]["atdist"] % confDict["facetParams"]["atstep"]:
+    if (
+        confDict["facetParams"]["atdist"]
+        % confDict["facetParams"]["atstep"]
+    ):
         print("Invalid config file param")
         print("atdist must be integer multiple of atstep")
         sys.exit(1)
 
-    if confDict["facetParams"]["ctdist"] % confDict["facetParams"]["ctstep"]:
+    if (
+        confDict["facetParams"]["ctdist"]
+        % confDict["facetParams"]["ctstep"]
+    ):
         print("Invalid config file param")
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
 
     # Determine internal xyz and spherical coordinate systems (IAU 2000)
     xyzD = {
-        "mars": "+proj=geocent +R=3396190 +no_defs", #used for CTX
-        #"mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs", #from the pds
+        "mars": "+proj=geocent +R=3396190 +no_defs",  # used for CTX
+        # "mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs", #from the pds
         "moon": "+proj=geocent +a=1737400 +b=1737400 +no_defs",
-        #"earth": "+proj=geocent +a=6378140 +b=6356750 +no_defs",
-        "earth": "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #drone
+        # "earth": "+proj=geocent +a=6378140 +b=6356750 +no_defs",
+        "earth": "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs",  # drone
         "ceres": "+proj=geocent +R=470000 +no_defs",
         "europa": "+proj=geocent +R=1560800 +no_defs",
     }
 
     lleD = {
-        "mars": "+proj=longlat +R=3396190 +no_defs", # used for CTX
-        #"mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs", #from the pds
+        "mars": "+proj=longlat +R=3396190 +no_defs",  # used for CTX
+        # "mars": "+proj=longlat +a=3396190 +b=3376200 +no_defs", #from the pds
         "moon": "+proj=longlat +a=1737400 +b=1737400 +no_defs",
-        #"earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
-        "earth": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs", #drone
+        # "earth": "+proj=longlat +a=6378140 +b=6356750 +no_defs",
+        "earth": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",  # drone
         "ceres": "+proj=longlat +R=470000 +no_defs",
         "europa": "+proj=longlat +R=1560800 +no_defs",
     }
@@ -220,5 +284,7 @@ def readConfig(argDict):
 
 def readNav(navPath, navSys, xyzSys, navFunc):
     # Call the user specified navigation file parser
-    nav = eval("parseNav." + navFunc)(navPath, navSys, xyzSys)
+    nav = eval("parseNav." + navFunc)(
+        navPath, navSys, xyzSys
+    )
     return nav

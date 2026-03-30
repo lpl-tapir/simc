@@ -1,10 +1,14 @@
 import sys
-import pandas as pd
+
 import geopandas as gpd
-import rasterio as rio
-import numpy as np
-import pyproj, h5py
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyproj
+import rasterio as rio
+
+from simc import parseNav
 
 # These functions must return a pandas dataframe with the
 # following cols -
@@ -13,9 +17,10 @@ import matplotlib.pyplot as plt
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
-#areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+# areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
 areoidPath = "../dem/mega_128ppd.tif"
-#areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+# areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+
 
 def GetNav_MARSIS(navfile, navsys, xyzsys):
     c = 299792458
@@ -45,7 +50,10 @@ def GetNav_MARSIS(navfile, navsys, xyzsys):
 
     auxData = np.fromfile(navfile, dtype=rec_t)
 
-    df = pd.DataFrame(auxData["TARGET_SC_POSITION_VECTOR"]*1e3, columns=['x', 'y', 'z'])
+    df = pd.DataFrame(
+        auxData["TARGET_SC_POSITION_VECTOR"] * 1e3,
+        columns=["x", "y", "z"],
+    )
 
     cmt = """
     # Find datum time with areoid
@@ -70,22 +78,25 @@ def GetNav_MARSIS(navfile, navsys, xyzsys):
 
     zval = aer.read(1)[iy, ix]"""
 
-    df["r"] = np.sqrt(df["x"]**2 + df["y"]**2 + df["z"]**2)
+    df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2)
 
-    angle = np.abs(np.arctan(df["z"]/np.sqrt(df["x"]**2 + df["y"]**2)))
+    angle = np.abs(np.arctan(df["z"] / np.sqrt(df["x"] ** 2 + df["y"] ** 2)))
 
     a = 3396190
     b = 3376200
 
-    marsR = (a*b)/np.sqrt((a**2)*(np.sin(angle)**2) + (b**2)*(np.cos(angle)**2))
+    marsR = (a * b) / np.sqrt(
+        (a**2) * (np.sin(angle) ** 2) + (b**2) * (np.cos(angle) ** 2)
+    )
 
-    df["datum"] = (df["r"]-marsR)*2.0/c - (256 * 1.0/1.4e6)
+    df["datum"] = (df["r"] - marsR) * 2.0 / c - (256 * 1.0 / 1.4e6)
 
-    #df["datum"] = ((df["r"] - zval+3396000) * 2.0 / c) - (
+    # df["datum"] = ((df["r"] - zval+3396000) * 2.0 / c) - (
     #    256 * 1/2.8e6
-    #)
+    # )
 
     return df[["x", "y", "z", "datum"]]
+
 
 def GetNav_akHypo(navfile, navsys, xyzsys):
     df = pd.read_csv(navfile)
@@ -95,7 +106,9 @@ def GetNav_akHypo(navfile, navsys, xyzsys):
 
 def GetNav_DJI(navfile, navsys, xyzsys):
     df = pd.read_csv(navfile, sep=",")
-    df["lon"] = df["lon"]+360 # this is needed to handle the CRS when the points are exported from QGIS
+    df["lon"] = (
+        df["lon"] + 360
+    )  # this is needed to handle the CRS when the points are exported from QGIS
     df["x"], df["y"], df["z"] = pyproj.transform(
         navsys,
         xyzsys,
@@ -182,7 +195,11 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
         sys.exit(1)
 
     aerX, aerY, aerZ = pyproj.transform(
-        xyzsys, aer.crs, df["x"].to_numpy(), df["y"].to_numpy(), df["z"].to_numpy()
+        xyzsys,
+        aer.crs,
+        df["x"].to_numpy(),
+        df["y"].to_numpy(),
+        df["z"].to_numpy(),
     )
 
     iy, ix = aer.index(aerX, aerY)
@@ -238,11 +255,15 @@ def GetNav_FPBgeom_PDS(navfile, navsys, xyzsys):
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
     # CHECK THIS LINE               <------------------------------------------------------------------------------
-    #df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)
-    df["datum"] = (1e3*(df["elev"] - 3396.0000)*2.0/c) - (1800.0*37.5e-9)  # modifiying this line from the PDS for CTX DEM
+    # df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)
+    df["datum"] = (1e3 * (df["elev"] - 3396.0000) * 2.0 / c) - (
+        1800.0 * 37.5e-9
+    )  # modifiying this line from the PDS for CTX DEM
     # CHECK THIS LINE               <------------------------------------------------------------------------------
-    df["areoid"] = 1e3*df["marsRad"] * 0#np.zeros_like(df["x"]) #zval +339600 used for CTX DEM
-    #df["areoid"] = np.zeros_like(df["x"]) #zval +3396000
+    df["areoid"] = (
+        1e3 * df["marsRad"] * 0
+    )  # np.zeros_like(df["x"]) #zval +339600 used for CTX DEM
+    # df["areoid"] = np.zeros_like(df["x"]) #zval +3396000
 
     return df[["x", "y", "z", "datum", "time", "areoid"]]
 
@@ -298,14 +319,14 @@ def GetNav_LRS(navfile, navsys, xyzsys):
 
     df = pd.read_csv(navfile, sep=",")
 
-    #df["datum"] = df["delay"]/1e6
+    # df["datum"] = df["delay"]/1e6
     ### Roberto ###
     c = 299792458
-    spacecraftHeight = 30000 #m
+    spacecraftHeight = 30000  # m
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
@@ -320,34 +341,35 @@ def GetNav_simpleTest(navfile, navsys, xyzsys):
 
     return df[["x", "y", "z", "datum"]]
 
+
 def GetNav_ARISE(navfile, navsys, xyzsys):
     fs = 6.25e6
 
     df = pd.read_csv(navfile, sep=",")
 
     c = 299792458
-    spacecraftHeight = 500000 #m
+    spacecraftHeight = 500000  # m
     samplingFrequency = 37.5e-9
     traceSamples = 3600
 
-    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
 
     return df[["x", "y", "z", "datum"]]
- 
+
 
 def GetNav_MatisseEuropa(navfile, navsys, xyzsys):
     fs = 6.25e6
 
     df = pd.read_csv(navfile, sep=",")
 
-    #df["datum"] = df["delay"]/1e6
+    # df["datum"] = df["delay"]/1e6
     ### Roberto ###
     c = 299792458
-    spacecraftHeight = 50000 #m
+    spacecraftHeight = 50000  # m
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
@@ -358,15 +380,14 @@ def GetNav_MatisseCeres(navfile, navsys, xyzsys):
 
     df = pd.read_csv(navfile, sep=",")
 
-    #df["datum"] = df["delay"]/1e6
+    # df["datum"] = df["delay"]/1e6
     ### Roberto ###
     c = 299792458
-    spacecraftHeight = 50000 #m
+    spacecraftHeight = 50000  # m
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
-
