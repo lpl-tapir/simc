@@ -1,36 +1,26 @@
-import pprint
 import sys
-import time
-
-import matplotlib.pyplot as plt
+import ingest, prep, sim, output
+import rasterio as rio
 import numpy as np
 import pandas as pd
+import pprint
 import pyproj
-import rasterio as rio
-import tqdm
-
-import simc.ingest
-import simc.output
-import simc.prep
-import simc.sim
+import time
+import matplotlib.pyplot as plt
 
 
 def main():
     startTime = time.time()
     version = 1.1
-    argDict = simc.ingest.parseCmd()
-    confDict = simc.ingest.readConfig(argDict)
+    argDict = ingest.parseCmd()
+    confDict = ingest.readConfig(argDict)
     dem = rio.open(confDict["paths"]["dempath"], mode="r")
 
-    nav = simc.ingest.readNav(
+    nav = ingest.readNav(
         confDict["paths"]["navpath"],
         confDict["navigation"]["navsys"],
         confDict["navigation"]["xyzsys"],
         confDict["navigation"]["navfunc"],
-    )
-
-    xform = pyproj.Transformer.from_crs(
-        confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"]
     )
 
     with open(confDict["paths"]["logpath"], "w") as fd:
@@ -39,15 +29,6 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
-<<<<<<< HEAD
-    # Parse dem CRS
-    demcrs = pyproj.CRS.from_user_input(dem.crs)
-    xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], demcrs)
-
-    nav, oDict, inv = simc.prep.prep(confDict, dem, nav)
-
-    bounds = simc.prep.calcBounds(
-=======
 
     demCrs = dem.crs
     try:
@@ -64,10 +45,9 @@ def main():
 
     nav, oDict, inv = prep.prep(confDict, dem, nav)
     bounds = prep.calcBounds(
->>>>>>> drone_manuscript_updates
         confDict,
         dem,
-        dem.crs,
+        demCrs,
         nav,
         confDict["navigation"]["xyzsys"],
         confDict["facetParams"]["atdist"],
@@ -84,19 +64,15 @@ def main():
         )
 
     win = rio.windows.Window.from_slices(rowSub, colSub)
+    print("win {}".format(win))
     demData = dem.read(1, window=win)
 
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))
 
-<<<<<<< HEAD
-    for i in tqdm.tqdm(range(nav.shape[0]), disable=(not argDict["p"])):
-        fcalc = simc.sim.sim(confDict, dem, nav, xform, demData, win, i)
-=======
     for i in range(nav.shape[0]):
         fcalc = sim.sim(confDict, dem, nav,  xform, demData, win, i)
         #fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
->>>>>>> drone_manuscript_updates
         if fcalc.shape[0] == 0:
             continue
 
@@ -107,7 +83,7 @@ def main():
         sys.stdout.flush()
 
     nav = nav.iloc[inv, :].reset_index()
-    simc.output.save(confDict, oDict, nav, dem, win, demData)
+    output.save(confDict, oDict, nav, dem, demData, demCrs, win)
     dem.close()
 
     stopTime = time.time()
@@ -115,5 +91,6 @@ def main():
         fd.write("Wall clock runtime: %.2fs" % (stopTime - startTime))
 
 
+# execute only if run as a script.
 if __name__ == "__main__":
     main()

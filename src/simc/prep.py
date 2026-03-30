@@ -1,10 +1,7 @@
-import sys
-
 import numpy as np
+import sys
 import pyproj
-import rasterio as rio
-
-import simc.sim
+import sim
 
 
 def findDupe(nav):
@@ -13,7 +10,7 @@ def findDupe(nav):
     navl = len(nav)
     olen = 0
     inv = np.zeros(navl)
-    uniq = np.ones(navl).astype(bool)
+    uniq = np.ones(navl).astype(np.bool)
 
     for i in range(navl - 1):
         row = nav.iloc[i]
@@ -67,19 +64,17 @@ def prep(confDict, dem, nav):
             np.float64
         )  # theta integrated along-track
         oDict["frmap"] = np.zeros((numCTfacets + 1, traces)).astype(
-            bool
+            np.bool
         )  # first return
 
     if out["fret"] or out["showfret"]:
         oDict["fret"] = np.zeros((traces, 4)).astype(np.float64)
 
     numFacets = int(
-        2
-        * (2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"])
-        * (2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
+        2 * ( 2 * confDict["facetParams"]["ctdist"] / confDict["facetParams"]["ctstep"] ) * ( 2 * confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"])
     )
 
-    # print("numFacets {}".format(numFacets))
+    print("numFacets {}".format(numFacets))
     oDict["pwr"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["twtt"] = np.zeros((traces, numFacets)).astype(np.float64)
     oDict["theta"] = np.zeros((traces, numFacets)).astype(np.float32)
@@ -94,7 +89,7 @@ def prep(confDict, dem, nav):
     vx = np.gradient(nav["x"])
     vy = np.gradient(nav["y"])
     vz = np.gradient(nav["z"])
-    vMag = np.sqrt(vx**2 + vy**2 + vz**2)
+    vMag = np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
     v = np.stack((vx / vMag, vy / vMag, vz / vMag), axis=1)
     nav["uv"] = list(v)
 
@@ -102,7 +97,7 @@ def prep(confDict, dem, nav):
     cx = -nav["x"]
     cy = -nav["y"]
     cz = -nav["z"]
-    cMag = np.sqrt(cx**2 + cy**2 + cz**2)
+    cMag = np.sqrt(cx ** 2 + cy ** 2 + cz ** 2)
     c = np.stack((cx / cMag, cy / cMag, cz / cMag), axis=1)
 
     # Right pointing cross track vector
@@ -117,15 +112,19 @@ def calcBounds(confDict, dem, demCrs, nav, xyzsys, atDist, ctDist):
     corners = np.zeros((len(nav) * 9, 3))
 
     for i in range(len(nav)):
-        gx, gy, gz = simc.sim.genGrid(nav, 1, 1, atDist, ctDist, i)
+        gx, gy, gz = sim.genGrid(nav, 1, 1, atDist, ctDist, i)
 
         corners[i * 9 : (i * 9) + 9, :] = np.stack((gx, gy, gz), axis=1)
 
-    xform = pyproj.Transformer.from_crs(xyzsys, demCrs)
-    demX, demY, demZ = xform.transform(corners[:, 0], corners[:, 1], corners[:, 2])
+    demX, demY, demZ = pyproj.transform(
+        xyzsys, demCrs, corners[:, 0], corners[:, 1], corners[:, 2]
+    )
     gt = ~dem.transform
+    print("gt {}".format(gt))
     ix, iy = gt * (demX, demY)
     bounds = [int(min(ix)), int(max(ix)), int(min(iy)), int(max(iy))]
+    
+    print(bounds)
     with open(confDict["paths"]["logpath"], "a") as fd:
         if bounds[0] < 0:
             fd.write("Warning: min X off of DEM -> {}\n".format(bounds[0]))

@@ -1,10 +1,8 @@
-import sys
-
 import numpy as np
 import pyproj
 import rasterio as rio
+import sys
 import scipy
-import matplotlib.pyplot as plt
 
 
 def sim(confDict, dem, nav, xform, demData, win, i):
@@ -38,12 +36,6 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     else:
         # Transform to dem CRS and sample DEM
         gtx, gty, gtz = xform.transform(gx, gy, gz, direction="FORWARD")
-<<<<<<< HEAD
-        # print("gx: {}".format(gx))
-        # print("gy: {}".format(gy))
-        # print("gz: {}".format(gz))
-=======
->>>>>>> drone_manuscript_updates
 
     # Sample DEM
     ix, iy = gt * (gtx, gty)
@@ -85,7 +77,7 @@ def sim(confDict, dem, nav, xform, demData, win, i):
             xords[valid], demz[valid], xordsQ, method="cubic"
         )
 
-        valid = np.ones(demz.shape).astype(bool)
+        valid = np.ones(demz.shape).astype(np.bool)
         valid[np.isnan(demz)] = 0
         demz[np.isnan(demz)] = 0
 
@@ -104,17 +96,9 @@ def sim(confDict, dem, nav, xform, demData, win, i):
     surface = np.stack((sx, sy, sz), axis=0)
     facets = genFacets(surface, valid)
 
-<<<<<<< HEAD
-    # Handle older config files without geometric spreading exponent - default to 4
-    if "geometricexponent" in confDict["simParams"].keys():
-        gspread = float(confDict["simParams"]["geometricexponent"])
-    else:
-        gspread = 4
-=======
     center_plane = None  
     if confDict["simParams"]["centerplane"]:
         center_plane = get_center_coordinates_plane(facets, atDist, atStep, ctDist, ctStep)
->>>>>>> drone_manuscript_updates
 
     fcalc = calcFacetsFriis(
         i,
@@ -122,23 +106,15 @@ def sim(confDict, dem, nav, xform, demData, win, i):
         nav["x"][i],
         nav["y"][i],
         nav["z"][i],
+        nav["uv"][i],
+        center_plane,
         confDict["simParams"]["speedlight"],
-<<<<<<< HEAD
-        gspread,
-    )
-
-    if "dipole" in confDict["simParams"].keys() and confDict["simParams"]["dipole"]:
-        fcalc = half_wave_dipole_gain(
-            fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i]
-        )
-=======
         confDict["simParams"]["antenna_pattern"]
     )
 
     if confDict["simParams"]["antenna_pattern"] == "half_wave_dipole": #used for drone GPR only 
         #print("!!! Applying half wave dipole gain !!!")
         fcalc = half_wave_dipole_gain(fcalc, (nav["x"][i], nav["y"][i], nav["z"][i]), nav["uv"][i])
->>>>>>> drone_manuscript_updates
 
     return fcalc
 
@@ -193,7 +169,8 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     # Col 5 is a flag for whether to use the facet
     # Cols 6-8 hold x,y,z for the facet center
     # Col 9 holds the facet's cross track index
-    fcalc = np.zeros((f.shape[0], 9))
+    # Col 10 holds the facet's angle of arrival
+    fcalc = np.zeros((f.shape[0], 11))
 
     # Calc midpoints
     mx = (f[:, 0] + f[:, 3] + f[:, 6]) / 3
@@ -205,15 +182,11 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     ry = py - my
     rz = pz - mz
 
-<<<<<<< HEAD
-    r = np.sqrt(rx**2 + ry**2 + rz**2)
-=======
     r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
 
     if center_plane != None:
         # Calculate angles of return
         theta, phi = calculate_angles_of_return(f, px, py, pz, rx, ry, rz, mx, my, mz, ua, center_plane)
->>>>>>> drone_manuscript_updates
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -255,13 +228,9 @@ def calcFacetsFriis(i, f, px, py, pz, ua, center_plane, c, antenna_pattern):
     fcalc[:, 6] = my
     fcalc[:, 7] = mz
     fcalc[:, 8] = f[:, 11]  # Cross track indices for echo power map
-<<<<<<< HEAD
-
-=======
     if center_plane != None:
         fcalc[:, 9] = theta
         fcalc[:, 10] = phi
->>>>>>> drone_manuscript_updates
     return fcalc
 
 
@@ -321,7 +290,7 @@ def calcFacets(f, px, py, pz, c):
     ry = py - my
     rz = pz - mz
 
-    r = np.sqrt(rx**2 + ry**2 + rz**2)
+    r = np.sqrt(rx ** 2 + ry ** 2 + rz ** 2)
 
     ## Calc area and normal vector
     # Calc 2->1 vector
@@ -341,7 +310,7 @@ def calcFacets(f, px, py, pz, c):
     ct = (rx * f[:, 6]) + (ry * f[:, 7]) + (rz * f[:, 8])
     ct = ct / (r * area * 2)
 
-    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r**4))  # power
+    fcalc[:, 0] = np.abs(((area * ct) ** 2) / (r ** 4))  # power
     fcalc[:, 1] = 2 * r / c  # twtt
     fcalc[:, 2] = f[:, 10]  # right or left
     fcalc[:, 4] = 1  # use all facets for now
@@ -359,10 +328,6 @@ def genFacets(s, valid):
     # not be evaluated later
     h = s.shape[1]
     w = s.shape[2]
-<<<<<<< HEAD
-    # print("gen facets {} {}".format(h,w))
-=======
->>>>>>> drone_manuscript_updates
     nfacet = (w - 1) * (h - 1) * 2  # number of facets
     qt = int(nfacet / 4)  # quarter
     hf = int(nfacet / 2)  # half
@@ -374,7 +339,7 @@ def genFacets(s, valid):
     # Col 11 holds whether the facet is left or right side left is 0, right is 1
     # Col 12 holds the cross-track index of the facet. This is for the echo power map
     f = np.zeros((nfacet, 12))
-    fkeep = np.ones(nfacet).astype(bool)
+    fkeep = np.ones(nfacet).astype(np.bool)
 
     # Ordering of points along axis 1 is important for cross product later
     # Ordering of points along axis 0 is important for left/right side

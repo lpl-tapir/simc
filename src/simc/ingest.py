@@ -1,12 +1,7 @@
-import argparse
-import configparser
-import os
-import sys
-
-import matplotlib.pyplot as plt
+import argparse, configparser, os, sys
 import numpy as np
-
-import simc.parseNav
+import parseNav
+import matplotlib.pyplot as plt
 
 
 def parseCmd():
@@ -28,13 +23,11 @@ def parseCmd():
         dest="outPath",
         help="Path to output products - overrides any path in config file",
     )
-    parser.add_argument("-p", action="store_true", help="Display progress bar")
     args = parser.parse_args()
 
     # Store in dict, expand any relative paths
     argDict = {}
     argDict["confPath"] = os.path.abspath(args.confPath)
-    argDict["p"] = args.p
 
     if args.navPath is not None:
         argDict["navPath"] = os.path.abspath(args.navPath)
@@ -90,7 +83,7 @@ def readConfig(argDict):
     if argDict["outPath"] is not None:
         confDict["paths"]["outpath"] = argDict["outPath"]
 
-    if confDict["paths"]["sigpath"].strip() not in (None, ""):
+    if confDict["paths"]["sigpath"].strip() not in (None, ''):
         confDict["simParams"]["coherent"] = True
     else:
         confDict["simParams"]["coherent"] = False
@@ -99,10 +92,6 @@ def readConfig(argDict):
     if not os.path.exists(confDict["paths"]["navpath"]):
         print("Invalid path to navigation file - file does not exist.")
         sys.exit(1)
-<<<<<<< HEAD
-
-=======
->>>>>>> drone_manuscript_updates
     if not os.path.exists(confDict["paths"]["dempath"]):
         print("Invalid path to DEM file - file does not exist.")
         sys.exit(1)
@@ -191,14 +180,15 @@ def readConfig(argDict):
         print("ctdist must be integer multiple of ctstep")
         sys.exit(1)
 
-    # Load internal xyz and spherical coordinate systems (IAU 2015)
-    base = __file__.split("/")[:-1]
-    base = "/".join(base)
+    # Determine internal xyz and spherical coordinate systems (IAU 2000)
     xyzD = {
-<<<<<<< HEAD
-        "mars": base + "/crs/mars2015_cartesian.wkt2",
-        "moon": base + "/crs/moon2015_cartesian.wkt2",
-        "earth": base + "/crs/epsg4978.wkt",
+        "mars": "+proj=geocent +R=3396190 +no_defs", #used for CTX
+        #"mars": "+proj=geocent +a=3396190 +b=3376200 +no_defs", #from the pds
+        "moon": "+proj=geocent +a=1737400 +b=1737400 +no_defs",
+        #"earth": "+proj=geocent +a=6378140 +b=6356750 +no_defs",
+        "earth": "+proj=geocent +ellps=WGS84 +datum=WGS84 +no_defs", #drone
+        "ceres": "+proj=geocent +R=470000 +no_defs",
+        "europa": "+proj=geocent +R=1560800 +no_defs",
     }
 
     lleD = {
@@ -210,16 +200,6 @@ def readConfig(argDict):
         "ceres": "+proj=longlat +R=470000 +no_defs",
         "europa": "+proj=longlat +R=1560800 +no_defs",
     }
-
-    for k, v in xyzD.items():
-        fd = open(v, mode="r")
-        xyzD[k] = fd.read()
-        fd.close()
-
-    for k, v in lleD.items():
-        fd = open(v, mode="r")
-        lleD[k] = fd.read()
-        fd.close()
 
     body = confDict["simParams"]["body"]
 
@@ -240,5 +220,5 @@ def readConfig(argDict):
 
 def readNav(navPath, navSys, xyzSys, navFunc):
     # Call the user specified navigation file parser
-    nav = eval("simc.parseNav." + navFunc)(navPath, navSys, xyzSys)
+    nav = eval("parseNav." + navFunc)(navPath, navSys, xyzSys)
     return nav
