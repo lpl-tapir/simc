@@ -1,12 +1,17 @@
+<<<<<<< HEAD
 import glob
 import os
 import sys
+=======
+import sys, os, glob
+>>>>>>> drone_manuscript_updates
 
 dir = sys.argv[1]
 
 # Get list of obs in file
 obs = []
 for file in os.listdir(dir):
+<<<<<<< HEAD
     print(file)
     # For sharad
     # ob = file.split('_')[0] + "_" + file.split('_')[1]

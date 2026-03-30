@@ -1,6 +1,7 @@
 import sys
 
 import h5py
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
 import numpy as np
 import pyproj
@@ -12,6 +13,11 @@ import simc.curve
 
 
 def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
+=======
+import rasterio
+
+def build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi):
+>>>>>>> drone_manuscript_updates
     # bincount requires assumptions - all positive integers, nothing greater than tracelen. Need to make sure these are met
     out = confDict["outputs"]
     spt = confDict["simParams"]["tracesamples"]
@@ -41,6 +47,7 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
     twtt = fcalc[:, 1]
     twttAdj = twtt - nav["datum"][i]
     cbin = (twttAdj / confDict["simParams"]["dt"]).astype(np.int32)
+<<<<<<< HEAD
 
     # Get rid of data that is after end of trace
     pwr[cbin >= confDict["simParams"]["tracesamples"]] = 0
@@ -51,6 +58,21 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
     # Add echo power map ref if necessary
     if "emap_ref" not in oDict.keys():
         scale = 2
+=======
+    cbin_float = (twttAdj / confDict["simParams"]["dt"]).astype(np.float32)
+
+    cbin = np.mod(cbin, confDict["simParams"]["tracesamples"])
+
+    # Add georef echo power map holder if necessary
+    # This cannot go in prep because it needs dem window information
+    # Add echo power map ref if necessary
+    if "emap_ref" not in oDict.keys():
+        scale = 2
+        # Needed to add an adaptive scale range due to the difference in raster size
+        if (win.height // 8 >= 300) and (win.width // 8 >= 300):
+            scale = 8
+
+>>>>>>> drone_manuscript_updates
         oDict["emap_ref"] = np.zeros(
             (win.height // scale + 1, win.width // scale + 1)
         )  # georeferenced echo power map
@@ -67,6 +89,15 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
         if out["combined"] or out["combinedadj"] or out["binary"]:
             oDict["combined"][:, j] = np.bincount(
                 cbin, weights=pwr, minlength=confDict["simParams"]["tracesamples"]
+            )
+
+        if out["combinedcolored"] or out["echomapcolored"]:
+            swathAngle = float(confDict["simParams"]["swathangle"])
+            oDict["combined_center"][:, j] = np.bincount(
+                cbin, weights=pwr*(theta <= (swathAngle/2)), minlength=confDict["simParams"]["tracesamples"]
+            )
+            oDict["combined_sides"][:, j] = np.bincount(
+                cbin, weights=pwr*(theta > (swathAngle/2)), minlength=confDict["simParams"]["tracesamples"]
             )
 
         if out["left"]:
@@ -87,19 +118,21 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
             ffacet = fcalc[twttAdj == twttAdj.min(), :]
             oDict["fret"][j, 0:3] = ffacet[0, 5:8]
 
-        if out["echomap"] or out["echomapadj"]:
+        if out["echomap"] or out["echomapadj"] or out["echomapcolored"] or out["echomapgeoref"]:
             oDict["emap"][:, j] = np.bincount(
                 cti, weights=pwr * (twtt**4), minlength=oDict["emap"].shape[0]
             )
-
-            # Mask out no-power bins
-            cbin_mask = cbin[:].astype(np.float32)
-            cbin_mask[pwr == 0] = np.nan
-
-            frFacets = cti[cbin_mask == np.nanmin(cbin_mask)]
+            oDict["emap_angles"][:, j] = np.bincount(
+                cti, weights=theta, minlength=oDict["emap"].shape[0]
+            )
+            #frFacets = cti[cbin_float == cbin_float.min()] #comparison of floats
+            frFacets = cti[cbin == cbin.min()] #comparison of integers
+            #ffacet = fcalc[pwr > (pwr.max() - ((pwr.max() - pwr.min()) / 2)) , :]
             oDict["frmap"][frFacets, j] = 1
+            #for k in range(-9, 10):
+            #    oDict["frmap"][frFacets+k, j] = 1
 
-            # Map facets back to dem grid
+            # Map facets back to dem grid for georeferenced echo power map
             gt = ~oDict["emap_ref_xform"]
             gtx, gty, gtz = xform.transform(
                 fcalc[:, 5], fcalc[:, 6], fcalc[:, 7], direction="FORWARD"
@@ -107,6 +140,7 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
             ix, iy = gt * (gtx, gty)
             ix = ix.astype(np.int32)
             iy = iy.astype(np.int32)
+<<<<<<< HEAD
 
             oDict["emap_ref"][iy, ix] += fcalc[:, 0]
             oDict["emap_ref_count"][iy, ix] += 1
@@ -118,6 +152,36 @@ def build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi):
     # valid = np.ones(ix.shape).astype(bool)
     # demz = np.zeros(ix.shape).astype(np.float32)
 
+=======
+
+            oDict["emap_ref"][iy, ix] += fcalc[:, 0]
+            oDict["emap_ref_count"][iy, ix] += 1
+
+        if out["exportfacetsarray"]:
+            mlon, mlat, melev = pyproj.transform(
+                confDict["navigation"]["xyzsys"],
+                confDict["navigation"]["llesys"],
+                fcalc[:,5],
+                fcalc[:,6],
+                fcalc[:,7],
+
+            )
+            fcalc[:,5] =  mlon
+            fcalc[:,6] =  mlat
+            fcalc[:,7] =  melev
+
+            filename = confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i)
+            print("saving {}...................".format(filename))
+            fcalc[:,0] = 10*np.log10(fcalc[:,0] / np.max(fcalc[:,0])) #exporting facets in dB
+            np.savetxt(
+                confDict["paths"]["outpath"] + "fcalc_{}.csv".format(i),
+                fcalc[:,[0,1,9,10,5,6,7]],
+                delimiter=",",
+                header="power,twtt,theta,phi,mx,my,mz",
+                fmt="%.6e,%.6e,%.6f,%6f,%.6f,%.6f,%.6f",
+                comments="",
+            )
+>>>>>>> drone_manuscript_updates
     return 0
 
 
@@ -161,8 +225,17 @@ def save(confDict, oDict, nav, dem, win, demData):
         dem2xyz = pyproj.Transformer.from_crs(dem.crs, confDict["navigation"]["xyzsys"])
         nx, ny, nz = dem2xyz.transform(gx, gy, demz)
 
+<<<<<<< HEAD
         dem2lle = pyproj.Transformer.from_crs(dem.crs, confDict["navigation"]["llesys"])
         nlat, nlon, nelev = dem2lle.transform(gx, gy, demz)
+=======
+        ## CHECK THIS LINE              <------------------------------------------------------
+        nlon, nlat, nelev = pyproj.transform(
+            demCrs, confDict["navigation"]["llesys"], gx, gy, demz
+            #confDict["navigation"]["xyzsys"], "+proj=longlat +a=3396190 +b=3376200 +no_defs", nx, ny, nz # from pds
+            #confDict["navigation"]["xyzsys"], "+proj=longlat +R=3396190 +no_defs", nx, ny, nz # from pds
+        )
+>>>>>>> drone_manuscript_updates
 
         nr = np.sqrt((nx - x) ** 2 + (ny - y) ** 2 + (nz - z) ** 2)
 
@@ -170,7 +243,6 @@ def save(confDict, oDict, nav, dem, win, demData):
             ((2 * nr / confDict["simParams"]["speedlight"]) - nav["datum"].to_numpy())
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
-
         if out["nadir"]:
             nadInfo = np.zeros((nav.shape[0], 4))
             nadInfo[:, 0] = nlat
@@ -201,8 +273,20 @@ def save(confDict, oDict, nav, dem, win, demData):
             / confDict["simParams"]["dt"]
         ).astype(np.int32)
 
+<<<<<<< HEAD
         xyz2lle = pyproj.Transformer.from_crs(
             confDict["navigation"]["xyzsys"], confDict["navigation"]["llesys"]
+=======
+        flon, flat, felev = pyproj.transform(
+            #commenting out the following 2 lines that were working for CTX instead of the confDict
+            #demCrs,
+            #"+proj=longlat +R=3396190 +no_defs", #from pds
+            confDict["navigation"]["xyzsys"],
+            confDict["navigation"]["llesys"],
+            fret[:, 0],
+            fret[:, 1],
+            fret[:, 2],
+>>>>>>> drone_manuscript_updates
         )
         flat, flon, felev = xyz2lle.transform(fret[:, 0], fret[:, 1], fret[:, 2])
 
@@ -221,7 +305,31 @@ def save(confDict, oDict, nav, dem, win, demData):
                 comments="",
             )
 
+<<<<<<< HEAD
     if out["combined"]:
+=======
+    if out["exportfacetsarrayh5"]:
+        slon, slat, selev = pyproj.transform(
+            confDict["navigation"]["xyzsys"],
+            confDict["navigation"]["llesys"],
+            x,
+            y,
+            z,
+            )
+        with h5py.File( confDict["paths"]["outpath"] + "out.h5", 'w' ) as hf:
+            hf.create_dataset("spacecraft_lat", data=slat, dtype=np.float32, compression="gzip")
+            hf.create_dataset("spacecraft_lon", data=slon, dtype=np.float32, compression="gzip")
+            hf.create_dataset("spacecraft_elev", data=selev, dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_pwr", data=oDict["pwr"], dtype=np.float64, compression="gzip")
+            hf.create_dataset("facets_twtt", data=oDict["twtt"], dtype=np.float64, compression="gzip")
+            hf.create_dataset("facets_theta", data=oDict["theta"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_phi", data=oDict["phi"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_lat", data=oDict["mx"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_lon", data=oDict["my"], dtype=np.float32, compression="gzip")
+            hf.create_dataset("facets_center_elev", data=oDict["mz"], dtype=np.float32, compression="gzip")
+
+    if out["combined"] or out["binary"]:
+>>>>>>> drone_manuscript_updates
         cgram = oDict["combined"] * (255.0 / oDict["combined"].max())
         cstack = np.dstack((cgram, cgram, cgram)).astype(np.uint8)
         cimg = Image.fromarray(cstack)
@@ -229,6 +337,7 @@ def save(confDict, oDict, nav, dem, win, demData):
         cimg.save(confDict["paths"]["outpath"] + "combined.png")
 
     if out["combinedadj"]:
+<<<<<<< HEAD
         # cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
         cgram = oDict["combined"]
 
@@ -245,6 +354,19 @@ def save(confDict, oDict, nav, dem, win, demData):
 
         # scaling = np.array(simc.curve.curve)
         # cgram = scaling[cgram] * 255
+=======
+        cgram = (oDict["combined"] * (255.0 / oDict["combined"].max())).astype(np.uint8)
+        '''
+        #The following lines are needed to align the clutter sim with the drone GPR first return
+        #TODO: move this parameter to a config file
+        for i in range(cgram.shape[1]):
+            print(i)
+            cgram[:, i] = np.roll(cgram[:,i], 35)
+        '''
+        # Auto adjustment
+        scaling = np.array(curve.curve)
+        cgram = scaling[cgram] * 255
+>>>>>>> drone_manuscript_updates
         cstack = np.dstack((cgram, cgram, cgram)).astype("uint8")
 
         # Add in first return and nadir locations if requested
@@ -264,6 +386,15 @@ def save(confDict, oDict, nav, dem, win, demData):
         cimg = Image.fromarray(cstack)
         cimg = cimg.convert("RGB")
         cimg.save(confDict["paths"]["outpath"] + "combinedAdj.png")
+
+        if out["combinedcolored"]:
+            cgram_center = cgram * np.bitwise_and(oDict["combined"] != 0, oDict["combined_sides"] == oDict["combined"])
+            cgram_center[cgram != cgram_center] = cgram[cgram != cgram_center] * 0.4
+            cstack = np.dstack((cgram_center, cgram, cgram_center)).astype("uint8")
+
+            cimg = Image.fromarray(cstack)
+            cimg = cimg.convert("RGB")
+            cimg.save(confDict["paths"]["outpath"] + "combinedColored.png")
 
     if out["left"]:
         cgram = oDict["left"] * (255.0 / oDict["left"].max())
@@ -285,6 +416,7 @@ def save(confDict, oDict, nav, dem, win, demData):
         )
 
     if out["echomap"]:
+<<<<<<< HEAD
         # egram = oDict["emap"] * (255.0 / oDict["emap"].max())
         # egram_color = np.copy(egram)
 
@@ -319,6 +451,40 @@ def save(confDict, oDict, nav, dem, win, demData):
                 1,
                 egram,
             )
+=======
+        egram = oDict["emap"] * (255.0 / oDict["emap"].max())
+        estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+        eimg = Image.fromarray(estack)
+        eimg = eimg.convert("RGB")
+        eimg.save(confDict["paths"]["outpath"] + "echomap.png")
+>>>>>>> drone_manuscript_updates
+
+    if out["echomapgeoref"]:
+        with rasterio.open(
+            confDict["paths"]["outpath"] + "echomap.tif",
+            "w",
+            driver="GTiff",
+            height=oDict["emap_ref"].shape[0],
+            width=oDict["emap_ref"].shape[1],
+            count=1,
+            dtype=np.float32,
+            crs=dem.crs,
+            transform=oDict["emap_ref_xform"],
+        ) as dst:
+            num = oDict["emap_ref"].astype(np.float32)
+            den = oDict["emap_ref_count"].astype(np.float32)
+
+            # Replace zeros with NaN to avoid division errors
+            safe_den = np.where(den == 0, np.nan, den)
+            ratio = num / safe_den
+
+            # Take log10
+            log_result = np.log10(ratio)
+
+            # Replace nan/inf with something safe (0)
+            log_result = np.nan_to_num(log_result, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+
+            dst.write_band(1, log_result)
 
     if out["echomapadj"]:
         # Resize
@@ -329,7 +495,10 @@ def save(confDict, oDict, nav, dem, win, demData):
         ).mean()
         ySquish = confDict["facetParams"]["ctstep"] / postSpace
         yDim = np.floor(emap.shape[0] * ySquish).astype(np.int32) + 1
+<<<<<<< HEAD
 
+=======
+>>>>>>> drone_manuscript_updates
         idx = np.arange(0, emap.shape[0])
         nidx = np.floor(idx * ySquish).astype(np.int32)
         egram = np.zeros((yDim, emap.shape[1]))
@@ -352,7 +521,10 @@ def save(confDict, oDict, nav, dem, win, demData):
         egram = np.maximum(0, egram)
 
         estack = np.dstack((egram, egram, egram)).astype(np.uint8)
+<<<<<<< HEAD
 
+=======
+>>>>>>> drone_manuscript_updates
         for i in range(egram.shape[1]):
             fri = frgram[:, i] > 0
             estack[fri, i] = frColor
@@ -361,3 +533,27 @@ def save(confDict, oDict, nav, dem, win, demData):
         eimg = Image.fromarray(estack)
         eimg = eimg.convert("RGB")
         eimg.save(confDict["paths"]["outpath"] + "echomapAdj.png")
+
+        if out["echomapcolored"]:
+            swathAngle = float(confDict["simParams"]["swathangle"])
+            shift = swathAngle / 2
+            nColor = [0, 255, 0]
+            facets_per_bin = confDict["facetParams"]["atdist"] / confDict["facetParams"]["atstep"] * 4
+            egram_color1 = np.copy(egram)
+            egram_color1[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] = egram[(((egram_angles / facets_per_bin) + shift)  / swathAngle) % 2 >= 1] * 0.7
+            egram_color2 = np.copy(egram)
+            egram_color2[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
+            egram_color3 = egram  * 0.7
+            egram_color3[egram_angles < (shift * facets_per_bin)] = egram[egram_angles < (shift * facets_per_bin)] * 0.5
+            estack = np.dstack((egram_color3, egram_color1, egram_color2)).astype(np.uint8)
+
+            for i in range(egram.shape[1]):
+                fri = frgram[:, i] > 0
+                estack[fri, i] = frColor
+                for k in range(-1, 2):
+                    estack[estack.shape[0] // 2+k, i] = nColor
+
+            eimg = Image.fromarray(estack)
+            eimg = eimg.convert("RGB")
+            eimg.save(confDict["paths"]["outpath"] + "echomapColored.png")
+

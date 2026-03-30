@@ -19,6 +19,7 @@ import xml.etree.ElementTree
 # and datum should be all zeros if no time shift is required, otherwise the
 # time shift in seconds
 
+<<<<<<< HEAD
 areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
 # areoidPath = "./dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
 
@@ -85,6 +86,11 @@ def GetNav_bsiHDF(navfile, navsys, xyzsys):
 
     return df[["x", "y", "z", "datum"]]
 
+=======
+#areoidPath = "/home/mchristo/proj/simc/dem/mega_128ppd.tif"
+areoidPath = "../dem/mega_128ppd.tif"
+#areoidPath = "../dem/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+>>>>>>> drone_manuscript_updates
 
 def GetNav_MARSIS(navfile, navsys, xyzsys):
     rec_t = np.dtype(
@@ -240,20 +246,31 @@ def GetNav_akHypo(navfile, navsys, xyzsys):
 
 
 def GetNav_DJI(navfile, navsys, xyzsys):
+<<<<<<< HEAD
     xformer = get_xformer(navsys, xyzsys)
 
     df = pd.read_csv(navfile, sep=",")
 
     c = 299792458
     df["x"], df["y"], df["z"] = xformer.transform(
+=======
+    df = pd.read_csv(navfile, sep=",")
+    df["lon"] = df["lon"]+360 # this is needed to handle the CRS when the points are exported from QGIS
+    df["x"], df["y"], df["z"] = pyproj.transform(
+        navsys,
+        xyzsys,
+>>>>>>> drone_manuscript_updates
         df["lon"].to_numpy(),
         df["lat"].to_numpy(),
         df["hgt"].to_numpy(),
     )
     df["datum"] = 0 * df["x"]
+<<<<<<< HEAD
     traceSamples = 1000
     # df["datum"] = (10 * 2.0 / c - (10e-9* (traceSamples / 2)))
 
+=======
+>>>>>>> drone_manuscript_updates
     return df[["x", "y", "z", "datum"]]
 
 
@@ -329,9 +346,20 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
     )
     df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
 
+<<<<<<< HEAD
     df["datum"] = (1e3 * (df["elev"] - df["marsRad"]) * 2.0 / c) - (1800.0 * 37.5e-9)
 
     return df[["x", "y", "z", "datum"]]
+=======
+    # CHECK THIS LINE               <------------------------------------------------------------------------------
+    #df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)
+    df["datum"] = (1e3*(df["elev"] - 3396.0000)*2.0/c) - (1800.0*37.5e-9)  # modifiying this line from the PDS for CTX DEM
+    # CHECK THIS LINE               <------------------------------------------------------------------------------
+    df["areoid"] = 1e3*df["marsRad"] * 0#np.zeros_like(df["x"]) #zval +339600 used for CTX DEM
+    #df["areoid"] = np.zeros_like(df["x"]) #zval +3396000
+
+    return df[["x", "y", "z", "datum", "time", "areoid"]]
+>>>>>>> drone_manuscript_updates
 
 
 def GetNav_QDAetm(navfile, navsys, xyzsys):
@@ -406,3 +434,54 @@ def GetNav_simpleTest(navfile, navsys, xyzsys):
     df["datum"] = np.zeros(df.shape[0])
 
     return df[["x", "y", "z", "datum"]]
+
+def GetNav_ARISE(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    c = 299792458
+    spacecraftHeight = 500000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 3600
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+
+    return df[["x", "y", "z", "datum"]]
+ 
+
+def GetNav_MatisseEuropa(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    #df["datum"] = df["delay"]/1e6
+    ### Roberto ###
+    c = 299792458
+    spacecraftHeight = 50000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 4800
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    ### Roberto ###
+
+    return df[["x", "y", "z", "datum"]]
+
+
+def GetNav_MatisseCeres(navfile, navsys, xyzsys):
+    fs = 6.25e6
+
+    df = pd.read_csv(navfile, sep=",")
+
+    #df["datum"] = df["delay"]/1e6
+    ### Roberto ###
+    c = 299792458
+    spacecraftHeight = 50000 #m
+    samplingFrequency = 37.5e-9
+    traceSamples = 4800
+
+    df["datum"] = (spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2)))
+    ### Roberto ###
+
+    return df[["x", "y", "z", "datum"]]
+

@@ -39,6 +39,7 @@ def main():
         )
         pprint.pprint(confDict, stream=fd)
 
+<<<<<<< HEAD
     # Parse dem CRS
     demcrs = pyproj.CRS.from_user_input(dem.crs)
     xform = pyproj.Transformer.from_crs(confDict["navigation"]["xyzsys"], demcrs)
@@ -46,6 +47,24 @@ def main():
     nav, oDict, inv = simc.prep.prep(confDict, dem, nav)
 
     bounds = simc.prep.calcBounds(
+=======
+
+    demCrs = dem.crs
+    try:
+        xform = pyproj.transformer.Transformer.from_crs(
+            confDict["navigation"]["xyzsys"], demCrs
+        )
+        print(xform)
+    except:
+        print("xfrom from dem crs failed, setting crs to xform from navsys in config file")
+        demCrs = confDict["navigation"]["navsys"]
+        xform = pyproj.transformer.Transformer.from_crs(
+            confDict["navigation"]["xyzsys"], demCrs
+        )
+
+    nav, oDict, inv = prep.prep(confDict, dem, nav)
+    bounds = prep.calcBounds(
+>>>>>>> drone_manuscript_updates
         confDict,
         dem,
         dem.crs,
@@ -70,14 +89,22 @@ def main():
     with open(confDict["paths"]["logpath"], "a") as fd:
         fd.write("Simulating %d traces\n" % len(nav))
 
+<<<<<<< HEAD
     for i in tqdm.tqdm(range(nav.shape[0]), disable=(not argDict["p"])):
         fcalc = simc.sim.sim(confDict, dem, nav, xform, demData, win, i)
+=======
+    for i in range(nav.shape[0]):
+        fcalc = sim.sim(confDict, dem, nav,  xform, demData, win, i)
+        #fcalc = sim.sim(confDict, dem, nav, normal, xform, demData, win, i)
+>>>>>>> drone_manuscript_updates
         if fcalc.shape[0] == 0:
             continue
 
         # Putting things back in order
         oi = np.where(inv == i)[0]
-        simc.output.build(confDict, oDict, fcalc, nav, xform, dem, win, i, oi)
+        output.build(confDict, oDict, fcalc, dem, win, xform, nav, i, oi)
+        print(".", end="")
+        sys.stdout.flush()
 
     nav = nav.iloc[inv, :].reset_index()
     simc.output.save(confDict, oDict, nav, dem, win, demData)
