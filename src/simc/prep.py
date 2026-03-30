@@ -12,7 +12,7 @@ def findDupe(nav):
     navl = len(nav)
     olen = 0
     inv = np.zeros(navl)
-    uniq = np.ones(navl).astype(np.bool)
+    uniq = np.ones(navl).astype(bool)
 
     for i in range(navl - 1):
         row = nav.iloc[i]
@@ -93,7 +93,7 @@ def prep(confDict, dem, nav):
         oDict["frmap"] = np.zeros(
             (numCTfacets + 1, traces)
         ).astype(
-            np.bool
+            bool
         )  # first return
 
     if out["fret"] or out["showfret"]:

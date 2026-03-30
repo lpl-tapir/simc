@@ -78,18 +78,27 @@ def GetNav_MARSIS(navfile, navsys, xyzsys):
 
     zval = aer.read(1)[iy, ix]"""
 
-    df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2)
+    df["r"] = np.sqrt(
+        df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2
+    )
 
-    angle = np.abs(np.arctan(df["z"] / np.sqrt(df["x"] ** 2 + df["y"] ** 2)))
+    angle = np.abs(
+        np.arctan(
+            df["z"] / np.sqrt(df["x"] ** 2 + df["y"] ** 2)
+        )
+    )
 
     a = 3396190
     b = 3376200
 
     marsR = (a * b) / np.sqrt(
-        (a**2) * (np.sin(angle) ** 2) + (b**2) * (np.cos(angle) ** 2)
+        (a**2) * (np.sin(angle) ** 2)
+        + (b**2) * (np.cos(angle) ** 2)
     )
 
-    df["datum"] = (df["r"] - marsR) * 2.0 / c - (256 * 1.0 / 1.4e6)
+    df["datum"] = (df["r"] - marsR) * 2.0 / c - (
+        256 * 1.0 / 1.4e6
+    )
 
     # df["datum"] = ((df["r"] - zval+3396000) * 2.0 / c) - (
     #    256 * 1/2.8e6
@@ -109,9 +118,8 @@ def GetNav_DJI(navfile, navsys, xyzsys):
     df["lon"] = (
         df["lon"] + 360
     )  # this is needed to handle the CRS when the points are exported from QGIS
-    df["x"], df["y"], df["z"] = pyproj.transform(
-        navsys,
-        xyzsys,
+    xform = pyproj.Transformer.from_crs(navsys, xyzsys)
+    df["x"], df["y"], df["z"] = xform.transform(
         df["lon"].to_numpy(),
         df["lat"].to_numpy(),
         df["hgt"].to_numpy(),
@@ -141,7 +149,10 @@ def GetNav_akHDF(navfile, navsys, xyzsys):
 
     else:
         h5.close()
-        print("No valid navigation data found in file %s" % navfile)
+        print(
+            "No valid navigation data found in file %s"
+            % navfile
+        )
         sys.exit()
 
     h5.close()
@@ -185,13 +196,19 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
         * np.cos(np.radians(df["lat"]))
         * np.sin(np.radians(df["lon"]))
     )
-    df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
+    df["z"] = (df["elev"] * 1000) * np.sin(
+        np.radians(df["lat"])
+    )
 
     # Find datum time with areoid
     try:
         aer = rio.open(areoidPath, "r")
     except:
-        print("Unable to open areoid file, is it at : " + areoidPath + " ?")
+        print(
+            "Unable to open areoid file, is it at : "
+            + areoidPath
+            + " ?"
+        )
         sys.exit(1)
 
     aerX, aerY, aerZ = pyproj.transform(
@@ -212,9 +229,9 @@ def GetNav_FPBgeom(navfile, navsys, xyzsys):
 
     zval = aer.read(1)[iy, ix]
 
-    df["datum"] = ((1000.0 * df["elev"] - 3396000.0 - zval) * 2.0 / c) - (
-        1800.0 * 37.5e-9
-    )
+    df["datum"] = (
+        (1000.0 * df["elev"] - 3396000.0 - zval) * 2.0 / c
+    ) - (1800.0 * 37.5e-9)
 
     return df[["x", "y", "z", "datum"]]
 
@@ -252,11 +269,15 @@ def GetNav_FPBgeom_PDS(navfile, navsys, xyzsys):
         * np.cos(np.radians(df["lat"]))
         * np.sin(np.radians(df["lon"]))
     )
-    df["z"] = (df["elev"] * 1000) * np.sin(np.radians(df["lat"]))
+    df["z"] = (df["elev"] * 1000) * np.sin(
+        np.radians(df["lat"])
+    )
 
     # CHECK THIS LINE               <------------------------------------------------------------------------------
     # df["datum"] = (1e3*(df["elev"] - df["marsRad"])*2.0/c) - (1800.0*37.5e-9)
-    df["datum"] = (1e3 * (df["elev"] - 3396.0000) * 2.0 / c) - (
+    df["datum"] = (
+        1e3 * (df["elev"] - 3396.0000) * 2.0 / c
+    ) - (
         1800.0 * 37.5e-9
     )  # modifiying this line from the PDS for CTX DEM
     # CHECK THIS LINE               <------------------------------------------------------------------------------
@@ -287,7 +308,7 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
         "utc1",
     ]
 
-    df = pd.read_csv(navfile, names=etmCols, sep="\s+")
+    df = pd.read_csv(navfile, names=etmCols, sep="\\s+")
 
     df["x"], df["y"], df["z"] = pyproj.transform(
         navsys,
@@ -305,7 +326,9 @@ def GetNav_QDAetm(navfile, navsys, xyzsys):
     # plt.show()
     # sys.exit()
 
-    rad = np.sqrt(df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2)
+    rad = np.sqrt(
+        df["x"] ** 2 + df["y"] ** 2 + df["z"] ** 2
+    )
 
     # plt.plot(rad)
     # plt.show()
@@ -326,7 +349,9 @@ def GetNav_LRS(navfile, navsys, xyzsys):
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
+    df["datum"] = spacecraftHeight * 2.0 / c - (
+        samplingFrequency * (traceSamples / 2)
+    )
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
@@ -352,7 +377,9 @@ def GetNav_ARISE(navfile, navsys, xyzsys):
     samplingFrequency = 37.5e-9
     traceSamples = 3600
 
-    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
+    df["datum"] = spacecraftHeight * 2.0 / c - (
+        samplingFrequency * (traceSamples / 2)
+    )
 
     return df[["x", "y", "z", "datum"]]
 
@@ -369,7 +396,9 @@ def GetNav_MatisseEuropa(navfile, navsys, xyzsys):
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
+    df["datum"] = spacecraftHeight * 2.0 / c - (
+        samplingFrequency * (traceSamples / 2)
+    )
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
@@ -387,7 +416,9 @@ def GetNav_MatisseCeres(navfile, navsys, xyzsys):
     samplingFrequency = 37.5e-9
     traceSamples = 4800
 
-    df["datum"] = spacecraftHeight * 2.0 / c - (samplingFrequency * (traceSamples / 2))
+    df["datum"] = spacecraftHeight * 2.0 / c - (
+        samplingFrequency * (traceSamples / 2)
+    )
     ### Roberto ###
 
     return df[["x", "y", "z", "datum"]]
